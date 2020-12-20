@@ -1,30 +1,672 @@
 ---
-title: "manuscript"
-author: "Daniel Baker"
+title: "Statistical analysis of periodic data in neuroscience"
+author: "Daniel H. Baker"
 date: "13/12/2020"
 output: pdf_document
+bibliography: bibliography.bib
+biblio-style: apalike
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+
+library(pals)
+
+nsims <- 100  # global value for the whole script - increase to 100000 for final run
+
+nbdtpal <- c(rgb(0,0,0),rgb(187/255,40/255,107/255),rgb(56/255,111/255,164/255),'darkgreen','darkorange')
+
+tsq1.test <- function(data,mu=NULL){
+  # function to calculate a one-sample t-squared test after Hotelling (1931)
+  # for two-sample tests, use the Hotelling package
+  
+  # compare each DV to some value
+  if (!is.null(mu)){for (m in 1:length(mu)){data[,m] <- data[,m]-mu[m]}}   
+  
+  xbar <- colMeans(data) # estimate means for each DV
+  m <- ncol(data)   # record number of DVs
+  N <- nrow(data)   # record sample size
+  C <- cov(data)    # calculate covariance matrix
+  Cinv <- solve(C)  # calculate inverse matrix
+  tsq <- N*t(xbar)%*%Cinv%*%xbar # compute t2 statistic
+  Fratio <- tsq * (N-m)/(m*(N-1)) # convert to F-ratio
+  df1 <- m      # record degrees of freedom
+  df2 <- N-m
+  pval <- 1- pf(Fratio,df1,df2) # estimate p-value
+  p.value <- min(pval,1)
+  
+  # store outputs in a data structure
+  output <- data.frame(tsq,Fratio,df1,df2,p.value)
+  return(output)}
+
+tsqc.test <- function(x,y=NULL,paired=FALSE,mu=NULL){
+  # function to calculate the t-squared circ statistic from Victor & Mast (1991)
+  # the inputs must be Nx2 or 2xN matrices of numbers
+  # for a one-sample test, mu is an optional vector to which the data are compared
+  
+  # transpose if dimensions are the wrong way round
+  if (is.matrix(x)){d <- dim(x)
+  if (d[1]<d[2]){x <- t(x)}}   
+  if (!is.null(y)){if (is.matrix(y)){d <- dim(y)
+  if (d[1]<d[2]){y <- t(y)}}}
+  
+  if (!is.null(mu)){for (n in 1:length(mu)){x[,n] <- x[,n] - mu[n]}}
+  
+  # convert data to complex representation
+  x <- complex(real=x[,1],imaginary=x[,2])
+  if (!is.null(y)){y <- complex(real=y[,1],imaginary=y[,2])}
+  
+  if (is.null(y)){method <- 'One-sample t-squared circ test'}
+  if (!is.null(y) & paired==TRUE){method <- 'Paired t-squared circ test'}
+  if (!is.null(y) & paired==FALSE){method <- 'Independent samples t-squared circ test'}
+  
+  if (paired==TRUE){if (is.null(y)==FALSE){x <- x - y}}
+  
+  # paired or one-sample version of the test
+  if (paired==TRUE | is.null(y)){ 
+    
+    nobs <- length(x)
+    cohmean <- mean(x)
+    absmean <- abs(cohmean)
+    
+    displacement <- abs(x - cohmean)
+    diffsumsq <- sum(displacement^2)
+    tsqc <- (nobs-1) * (absmean^2) / diffsumsq
+    Fratio <- nobs*tsqc
+    df2 <- nobs*2-2
+    pval <- pf(Fratio,df1=2,df2=df2,lower.tail=FALSE)
+  }
+  
+  # independent samples version of the test
+  if (paired==FALSE & !is.null(y)){  
+    nobs1 <- length(x)
+    cohmean1 <- mean(x)
+    absmean1 <- abs(cohmean1)
+    displacement1 <- abs(x - cohmean1)
+    
+    nobs2 <- length(y)
+    cohmean2 <- mean(y)
+    absmean2 <- abs(cohmean2)    
+    displacement2 <- abs(y - cohmean2)
+    
+    meandiff <- cohmean1 - cohmean2
+    absdiff <- abs(meandiff)
+    diffsumsq <- sum(displacement1^2) + sum(displacement2^2)
+    
+    tsqc <- (nobs1 + nobs2 - 2) * (absdiff^2) / diffsumsq
+    Fratio <- ((nobs1*nobs2)/(nobs1 + nobs2))*tsqc
+    df2 <- (2*nobs1 + 2*nobs2 - 4)
+    pval <- pf(Fratio,df1=2,df2=df2,lower.tail=FALSE)
+  }
+  
+  df1 <- 2
+  p.value <- min(pval,1)
+  
+  output <- data.frame(tsqc,Fratio,df1,df2,p.value,method)
+  return(output)}
+
+CI.test <- function(data){
+  # function to calculate the condition index of bivariate data
+  # compare for significance with an expected distribution function
+  
+  C <- cov(data)  # covariance matrix
+  N <- nrow(data) # sample size
+  eigVal  <- eigen(C)$values  # calculate eigenvalues
+  CI <- sqrt(eigVal[1]/eigVal[2]) # calculate condition index
+  
+  maxci <- max(20,round(CI+5))   # make sure our target CI is in range
+  cilist <- seq(1,maxci,0.01)    # list of possible CIs
+  
+  # calculate probability density function using modified Edelman equation
+  pdffunction <- ((N-2)*(2^(N-2))) * 
+    ((cilist^2 - 1)/((cilist^2+1)^(N-1))) * (cilist^(N-3))
+  cdfinverse <- 1-(cumsum(pdffunction)/sum(pdffunction)) # inverse of cdf
+  criticalCI <- cilist[min(which(cdfinverse<=0.05))]  # find the threshold CI
+  
+  indices <- which(cilist>=CI)  # find the CI values larger than our CI
+  pval <- cdfinverse[indices[1]] # estimate the p-value
+  
+  output <- data.frame(CI,N,criticalCI,pval)
+  return(output)}
+
+addalpha <- function(col, alpha=1){apply(sapply(col, col2rgb)/255, 2, function(x) rgb(x[1], x[2], x[3], alpha=alpha))}
+
 ```
 
-## R Markdown
+## Abstract
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+## Background
 
-```{r cars}
-summary(cars)
+A widely used paradigm in many branches of neuroscience is to drive the nervous system using periodic stimuli. This entrains neural responses at the stimulation frequency, resulting in high signal-to-noise ratios relative to single stimulus presentations. These periodic responses, often called the _steady-state_ or _frequency following_ response, can be recorded from single neurons [@Enroth-Cugell1966] and local field potentials [@Morrone1987] using invasive methods, or with non-invasive electroencephalography (EEG) and magnetoencephalography (MEG) systems, both in humans [@Norcia2015] and in diverse animal species including insects [@Afsari2014], birds [@Porciatti1990], rodents [@Hwang2019] and primates [@Nakayama1982]. Steady-state methods are used to measure early sensory responses in vision [@Regan1966], hearing [@Rees1986] and somatosensation [@Snyder1992], and closely related paradigms have been developed to target specific stimulus features such as orientation [@Braddick1986], and facial expression [@Gray2020] and identity [@Liu-Shuang2014]. In fMRI research, _travelling wave_ methods [@Engel1994; @Sereno1995] are used to map the retinotopic responses of early visual cortex, again using stimuli that change periodically, this time in spatial position. Finally, physiological reflexes such as the pupillary response to light can be entrained in a similar way [@Spitschan2014].
+
+A convenient way to analyse the data from periodic stimulation experiments is to take the Fourier transform of the measured signal. The amplitude of the response at the stimulation frequency (and its harmonics - integer multiples of the stimulation frequency) is a convenient, and well-isolated index of the brain's response. Fourier spectra comprise both amplitude and phase information, which can be equivalently expressed as complex numbers with real and imaginary components. In many studies the phase information is routinely discarded, and statistical comparisons are performed on the amplitude data only. However an alternative is to use multivariate statistics, which take into account both the amplitude and phase information (represented as real and imaginary components). Multivariate methods have the advantage that they are more sensitive to weak signals, and therefore offer increased statistical power relative to univariate methods.
+
+For pointwise and pairwise comparisons, Hotelling's $T^2$ statistic [@Hotelling1931] is a multivariate extension of the t-test. For the one-sample case, the test statistic is defined as:
+
+\begin{equation}
+\label{eq:t2eq}
+T^2 = N(\bar{x} - \mu)' C^{-1} (\bar{x} - \mu),
+\end{equation}
+
+where _N_ is the number of observations, $\bar{x}$ is the multivariate sample mean, $\mu$ is the point of comparison, $C^{-1}$ is the inverse covariance matrix, and $'$ denotes vector transposition. Conceptually, the $T^2$ statistic extends the univariate t-statistic by incorporating the covariance between the dependent variables. Two-sample and paired variants are also available, and the test can be applied to an arbitrary number of dependent variables (though here we will consider only the bivariate case).
+
+More recently, Victor and Mast [-@Victor1991] proposed a simpler version of $T^2$, called $T^2_{circ}$. The $T^2_{circ}$ statistic makes the strong assumption that the dependent variables (real and imaginary values) are uncorrelated and have equal variance. When these conditions are met, the test statistic is defined as:
+
+\begin{equation}
+\label{eq:t2c}
+T^2_{circ} = (N-1)\frac{|\bar{x}-\mu|^2}{\Sigma|x_j - \bar{x}|^2}
+\end{equation}
+
+where $x_j$ denotes the $j$th observation of the dependent variables, and all other terms retain their previous meanings. Notice that no covariance term is present in equation \@ref(eq:t2c), because of the independence assumption. This makes the statistic simpler to calculate, but causes problems when the assumption is violated.
+
+In the present paper, we develop best practice guidelines for performing statistical tests on multivariate Fourier components derived from periodic stimulation paradigms. We first demonstrate why parametric univariate statistics are inappropriate for such data, because amplitudes for weak signals are not normally distributed. We then investigate conditions under which we should use either the $T^2$ or $T^2_{circ}$ statistic. The range of sample sizes and effect sizes where $T^2_{circ}$ is more sensitive is identified. We develop a novel method for testing the assumptions of the $T^2_{circ}$ statistic, based on calculating the condition index of a multivariate data set. We then discuss appropriate methods for identifying outliers and calculating error bars. Finally, we demonstrate the proposed techniques on two example SSVEP data sets, and recommend some best practice guidelines for analysis decisions. All data and scripts used to produce this manuscript are available at: [https://github.com/bakerdh/FourierStats](https://github.com/bakerdh/FourierStats). These include _R_ functions to implement one-sample Hotelling's [-@Hotelling1931] $T^2$ statistic, Victor & Mast's [-@Victor1991] $T^2_{circ}$ statistic, and the condition index statistic proposed in this paper.
+
+## Fourier amplitudes violate parametric assumptions of univariate statistics
+
+Many studies use parametric t-tests and analysis of variance (ANOVA) to analyse periodic data. Specifically, the amplitude component of the Fourier spectrum at the stimulation frequency is used as the dependent variable, discarding the phase information. This is problematic, because the amplitude is an absolute quantity, and can never fall below zero. Distributions of amplitudes for weak signals are therefore likely to be positively skewed, and in general will violate the assumption of normality.
+
+```{r amphists, fig.cap="Demonstration of skew in absolute Fourier amplitudes for weak signals. Signal strength is quantified as Cohen's d, defined as the ratio of the mean to the standard deviation of the sample. The upper row shows samples of 50 grey points, and the population mean (coloured points). The lower row shows kernel density functions generated from 100,000 amplitude values. Note that the mean phase of the signal is irrelevant for these simulations, and is shown in the positive x-direction for consistency.", fig.align="center", echo=FALSE, fig.width=12, fig.height=6}
+
+npoints <- 50
+dlist <- c(0,0.5,1,2,4)
+
+plot(x=NULL,y=NULL,axes=FALSE,ann=FALSE, xlim=c(0,60), ylim=c(0,24))
+for (n in 1:5){lines(c((n-1)*12,(n*12)-2),c(18,18),lwd=2)}
+for (n in 1:5){lines(c(5,5)+(n-1)*12,c(13,23),lwd=2)}
+
+for (n in 1:5){lines(c((n-1)*12,(n*12)-2),c(0,0),lwd=2)}
+for (n in 1:5){lines(c(0,0)+(n-1)*12,c(0,10),lwd=2)}
+
+text(0.5,19,'x',adj=0.5,cex=1.5)
+text(4,13.5,'y',adj=0.5,cex=1.5)
+
+
+for (d in 1:5){
+simdata <- matrix(rnorm(npoints*2,mean=0,sd=1),nrow=npoints,ncol=2)
+simdata[,1] <- simdata[,1] + dlist[d]
+for (n in 1:npoints){lines(c(0,simdata[n,1])+5+(d-1)*12,c(0,simdata[n,2])+18,col=rgb(0,0,0,alpha=0.2))}
+points(simdata[,1]+5+(d-1)*12,simdata[,2]+18,type='p',pch=16,col=rgb(0,0,0,alpha=0.2))
+points(5+(d-1)*12+dlist[d],18,type='p',pch=16,cex=2,col=nbdtpal[d])
+text(5+(d-1)*12,24,paste('d =',dlist[d]),adj=0.5,cex=1.5)
+}
+
+
+for (d in 1:5){
+simdata <- matrix(rnorm(nsims*2,mean=0,sd=1),nrow=nsims,ncol=2)
+simdata[,1] <- simdata[,1] + dlist[d]
+absvals <- abs(complex(real=simdata[,1],imaginary=simdata[,2]))
+a <- density(absvals)
+a$x <- a$x-min(a$x)
+a$x <- a$x/max(a$x)
+a$x <- 10*a$x
+a$y <- 10*a$y/max(a$y)
+polygon(a$x+(d-1)*12,a$y,col=addalpha(nbdtpal[d],alpha=0.3),border=NA)
+
+# lines(seq(0,10,0.01)+(d-1)*12,10*pnorm(seq(-5,5,0.01)),lwd=2)
+# q <- quantile(scale(absvals),probs=seq(0,1,0.001))
+# lines(5+q+(d-1)*12,seq(0,10,0.01),lwd=2,col=nbdtpal[d])
+
+}
+
 ```
 
-## Including Plots
+The upper row of Figure \@ref(fig:amphists) shows scatterplots of simulated Fourier components, expressed using real (x) and imaginary (y) components. The amplitudes are the lengths of the lines joining each grey point to the origin. The lower row in Figure \@ref(fig:amphists) shows distributions of amplitudes for the same set of signal strengths. These distributions only approach normality when the signal strength is more than twice the standard deviation (Cohen's d > 2; Cohen's d is the mean difference scaled by the standard deviation, see Cohen [-@Cohen1988]). One consequence of this is that t-tests will typically have an inflated Type 1 error (false positive) rate for many signals encountered empirically.
 
-You can also embed plots, for example:
+Typical solutions, such as log-transforming the data, are unlikely to be equally applicable to all conditions. For example, if one wishes to compare a baseline where no stimulus was presented with a condition involving a strong signal, the former will be skewed and the latter normal. Applying a transform to both conditions is therefore problematic. Non-parametric statistics are a potential option, but these have generally lower statistical power than their parametric equivalents. Instead, the bivariate statistics discussed in the introduction avoid these issues and have greater statistical power, as we will demonstrate in the next section.
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+## Conditions under which $T^2_{circ}$ is more sensitive than $T^2$
+
+Using the $T^2$ and $T^2_{circ}$ allow us to retain the phase information, and therefore have greater power than univariate T-tests, as well as avoiding problems caused by using absolute amplitude values. Victor & Mast [-@Victor1991] report simulations showing situations where $T^2_{circ}$ has greater power than $T^2$. Here we replicate and extend these simulations (see Figure \@ref(fig:powerfig)), and demonstrate that the regime where $T^2_{circ}$ has greater power occurs particularly for large effect sizes and small sample sizes (see Figure \@ref(fig:powerfig)f). However, for effect sizes around 0.5 < _d_ < 1, $T^2_{circ}$ is more sensitive even with around 16 observations. This advantage is lost for large sample sizes (N > 32) and large effect sizes (d > 2 when N > 8)
+
+```{r powerfig, fig.cap=".", fig.align="center", echo=FALSE, fig.width=12, fig.height=8}
+
+layout(matrix(1:6,nrow=2,ncol=3,byrow=TRUE))
+abc <- c('a','b','c')
+
+vinds <- c(2,5,17)
+dlist <- seq(0,4,0.25)
+slist <- seq(1.5,5,0.5)
+samplesizes <- ceiling(2^slist)
+
+tsqmatrix <- matrix(0,nrow=length(samplesizes),ncol=length(dlist))
+circmatrix <- matrix(0,nrow=length(samplesizes),ncol=length(dlist))
+for (n in 1:nsims){
+  for (s in 1:length(samplesizes)){
+    for (s2 in 1:length(dlist)){
+    data <- matrix(rnorm(2*samplesizes[s]),nrow=samplesizes[s],ncol=2)
+    data[,1] <- data[,1] + dlist[s2]
+    a <- tsq1.test(data)
+    if (a[5]<0.05){tsqmatrix[s,s2] <- tsqmatrix[s,s2] + 1}
+    a <- tsqc.test(data)
+    if (a[5]<0.05){circmatrix[s,s2] <- circmatrix[s,s2] + 1}
+  }}
+}
+
+tsqpropM <- tsqmatrix/nsims
+circpropM <- circmatrix/nsims
+tsqvscirc <- circpropM - tsqpropM
+
+plotlims <- c(1,5,0,1)
+ticklocsx <- seq(1,5,1)    # locations of tick marks on x axis
+ticklocsy <- seq(0,1,0.2)    # locations of tick marks on y axis
+ticklabelsx <- 2^ticklocsx        # set labels for x ticks
+ticklabelsy <- ticklocsy    # set labels for y ticks
+
+for (n in 1:3){
+par(pty="s")
+plot(x=NULL,y=NULL,axes=FALSE, ann=FALSE, xlim=plotlims[1:2], ylim=plotlims[3:4])   
+axis(1, at=ticklocsx, tck=0.01, lab=F, lwd=2)     # plot tick marks (no labels)
+axis(2, at=ticklocsy, tck=0.01, lab=F, lwd=2)
+mtext(text = ticklabelsx, side = 1, at=ticklocsx, line=0.2)
+mtext(text = ticklabelsy, side = 2, at=ticklocsy, line=0.2, las=1) 
+title(xlab="Number of observations", col.lab=rgb(0,0,0), line=1.5, cex.lab=1.5)
+title(ylab="Proportion significant", col.lab=rgb(0,0,0), line=2.2, cex.lab=1.5)
+title(paste('d =',dlist[vinds[n]]),cex.main=2)
+lines(slist,tsqpropM[,vinds[n]],lwd=3,col=nbdtpal[1])
+lines(slist,circpropM[,vinds[n]],lwd=3,col=nbdtpal[2])
+
+points(slist,tsqpropM[,vinds[n]],lwd=3,pch=15,cex=1.5,col=nbdtpal[1])
+points(slist,circpropM[,vinds[n]],lwd=3,pch=16,cex=1.5,col=nbdtpal[2])
+
+text(1.1,0.95,paste('(',abc[n],')',sep=''),cex=2)
+
+if (n==1){legend(3.8,1,c(expression(T^2),expression('T'[circ]^2)),pch=15:16,cex=1.5,col=nbdtpal[1:2],box.lwd=2)}
+}
+
+
+par(pty="s")
+plot(x=NULL,y=NULL,axes=FALSE, ann=FALSE, xlim=c(1,5), ylim=c(0,4))
+ticklocsx <- seq(1,5,1)    # locations of tick marks on x axis
+ticklocsy <- seq(0,4,1)    # locations of tick marks on y axis
+ticklabelsx <- 2^ticklocsx        # set labels for x ticks
+ticklabelsy <- seq(0,4,1)    # set labels for y ticks
+axis(1, at=ticklocsx, tck=0.01, lab=F, lwd=2)  
+axis(2, at=ticklocsy, tck=0.01, lab=F, lwd=2)
+mtext(text = ticklabelsx, side = 1, at=ticklocsx, line=0.2)     
+mtext(text = ticklabelsy, side = 2, at=ticklocsy, line=0.2, las=1) 
+title(xlab="Number of observations", col.lab=rgb(0,0,0), line=1.2, cex.lab=1.5)
+title(ylab="Effect size (d)", col.lab=rgb(0,0,0), line=1.5, cex.lab=1.5)
+title(expression(T^2),cex.main=2)
+image(slist,dlist,tsqpropM,zlim=c(0,1),add=TRUE,col=kovesi.linear_blue_95_50_c20(256))
+text(1.1,3.8,'(d)',cex=2)
+legend(3.4,3.8,c('0','0.5','1'),lwd=6,cex=1.5,col=kovesi.linear_blue_95_50_c20(3),box.lwd=2,bg='white')
+
+par(pty="s")
+plot(x=NULL,y=NULL,axes=FALSE, ann=FALSE, xlim=c(1,5), ylim=c(0,4))
+axis(1, at=ticklocsx, tck=0.01, lab=F, lwd=2)  
+axis(2, at=ticklocsy, tck=0.01, lab=F, lwd=2)
+mtext(text = ticklabelsx, side = 1, at=ticklocsx, line=0.2)     
+mtext(text = ticklabelsy, side = 2, at=ticklocsy, line=0.2, las=1) 
+title(xlab="Number of observations", col.lab=rgb(0,0,0), line=1.2, cex.lab=1.5)
+title(ylab="Effect size (d)", col.lab=rgb(0,0,0), line=1.5, cex.lab=1.5)
+ttext <- expression('T'[circ]^2)
+title(ttext,cex.main=2)
+image(slist,dlist,circpropM,zlim=c(0,1),add=TRUE,col=kovesi.linear_blue_95_50_c20(256))
+text(1.1,3.8,'(e)',cex=2)
+
+
+par(pty="s")
+plot(x=NULL,y=NULL,axes=FALSE, ann=FALSE, xlim=c(1,5), ylim=c(0,4))
+axis(1, at=ticklocsx, tck=0.01, lab=F, lwd=2)  
+axis(2, at=ticklocsy, tck=0.01, lab=F, lwd=2)
+mtext(text = ticklabelsx, side = 1, at=ticklocsx, line=0.2)     
+mtext(text = ticklabelsy, side = 2, at=ticklocsy, line=0.2, las=1) 
+title(xlab="Number of observations", col.lab=rgb(0,0,0), line=1.2, cex.lab=1.5)
+title(ylab="Effect size (d)", col.lab=rgb(0,0,0), line=1.5, cex.lab=1.5)
+ttext <- expression({'T'[circ]^2}~-~{T^{"2"}})
+title(ttext,cex.main=2)
+image(slist,dlist,tsqvscirc,zlim=c(0,1),add=TRUE,col=kovesi.linear_blue_95_50_c20(256))
+cl <- contourLines(slist,dlist,tsqvscirc,levels=c(0.02,0.05,0.1,0.2,0.4))
+for (n in 1:length(cl)){
+  temp <- cl[n]
+  lines(temp[[1]]$x,temp[[1]]$y,col='black',lwd=3)
+}
+text(1.1,3.8,'(f)',cex=2)
+
+
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+## Limitations of $T^2_{circ}$ when assumptions are violated
+
+```{r falsealarms, fig.asp=1.4, fig.cap='Simulations showing the Type I error rate for both tests as a function of the correlation between two variables (a) and the ratio of variances (b). Estimates are for 100000 simulations per condition, with N=10 observations. The icons at the foot of each panel show example scatterplots with bounding ellipses and eigenvectors.', echo=FALSE}
+
+par(mfrow=c(2,1))
+
+nobs <- 10
+corvals <- seq(-0.9,0.9,0.1)
+
+plotlims <- c(-1,1,0,0.1) 
+ticklocsx <- seq(-1,1,0.5)    # locations of tick marks on x axis
+ticklocsy <- seq(0,0.1,0.025)    # locations of tick marks on y axis
+ticklabelsx <- ticklocsx        # set labels for x ticks
+ticklabelsy <- ticklocsy*100    # set labels for y ticks
+
+plot(x=NULL,y=NULL,axes=FALSE, ann=FALSE, xlim=plotlims[1:2], ylim=plotlims[3:4])   
+axis(1, at=ticklocsx, tck=0.01, lab=F, lwd=2)     # plot tick marks (no labels)
+axis(2, at=ticklocsy, tck=0.01, lab=F, lwd=2)
+mtext(text = ticklabelsx, side = 1, at=ticklocsx)     # add the tick labels
+mtext(text = ticklabelsy, side = 2, at=ticklocsy, line=0.2) 
+title(xlab="Correlation (R)", col.lab=rgb(0,0,0), line=1.2, cex.lab=1.5)  
+title(ylab="Percent significant", col.lab=rgb(0,0,0), line=1.5, cex.lab=1.5)
+
+lines(c(-1,1),c(0.05,0.05),lty=2,lwd=2)
+
+hsig <- corvals*0
+csig <- corvals*0
+simdata <- matrix(0,nrow=nobs,ncol=2)
+for (cond in 1:length(corvals)){
+  for (simno in 1:nsims){
+    
+    xdata <- rnorm(nobs,mean=0,sd=1)
+    ydata <- sign(corvals[cond])*sqrt(abs(corvals[cond]))*xdata + sqrt(1-abs(corvals[cond]))*rnorm(nobs,mean=0,sd=1)
+    simdata[,1] <- xdata
+    simdata[,2] <- ydata
+    output <- tsqc.test(simdata,paired=FALSE)
+    if (output$p.value < 0.05){csig[cond] <- csig[cond] + 1}
+    output <- tsq1.test(simdata)
+    if (output$p.value < 0.05){hsig[cond] <- hsig[cond] + 1}
+  }}
+propc <- csig/nsims
+lines(corvals,propc,lty=1,lwd=4,col=nbdtpal[2])
+proph <- hsig/nsims
+lines(corvals,proph,lty=1,lwd=4,col=nbdtpal[1])
+
+legend(-0.25,0.1, c(expression('T'[circ]^2),expression('T'^2)), cex=1, col=nbdtpal[2:1],lty=1, lwd=3, box.lwd=2)
+
+nobs <- 10000
+corvals <- seq(-0.9,0.9,0.45)
+simdata <- matrix(0,nrow=nobs,ncol=2)
+
+for (cond in 1:length(corvals)){
+  xdata <- rnorm(nobs,mean=0,sd=1)
+  ydata <- sign(corvals[cond])*sqrt(abs(corvals[cond]))*xdata + sqrt(1-abs(corvals[cond]))*rnorm(nobs,mean=0,sd=1)
+  compdata <- data.frame(xdata,ydata)
+  
+  A <- cov(compdata)
+  ctr    <- colMeans(compdata) 
+  RR     <- chol(A)                               # Cholesky decomposition
+  angles <- seq(0, 2*pi, length.out=200)          # angles for ellipse
+  ell    <- 1 * cbind(cos(angles), sin(angles)) %*% RR  # ellipse scaled with factor 1
+  ellCtr <- sweep(ell, 2, ctr, "+")               # center ellipse to the data centroid
+  eigVal  <- eigen(A)$values
+  eigVec  <- eigen(A)$vectors
+  eigScl  <- eigVec  %*% diag(sqrt(eigVal))  # scale eigenvectors to length = square-root
+  xMat    <- rbind(ctr[1] + eigScl[1, ], ctr[1] - eigScl[1, ])
+  yMat    <- rbind(ctr[2] + eigScl[2, ], ctr[2] - eigScl[2, ])
+  ellBase <- cbind(sqrt(eigVal[1])*cos(angles), sqrt(eigVal[2])*sin(angles)) 
+  ellRot  <- eigVec %*% t(ellBase) 
+  
+  points(0.05*xdata[1:100]+corvals[cond],0.005*ydata[1:100]+0.02,pch=16,cex=0.5,col=nbdtpal[3])
+  matlines(0.1*xMat+corvals[cond], 0.01*yMat+0.02, lty=1, lwd=3, col="black")
+  lines(0.1*(ellRot+ctr)[1, ]+corvals[cond], 0.01*(ellRot+ctr)[2, ]+0.02, lwd=2)
+}
+text(-0.95,0.095,'(a)',cex=1.5)
+
+
+nobs <- 10
+corvals <- seq(-0.9,0.9,0.1)
+varratios <- 10^(corvals/2)
+
+plotlims <- c(-1,1,0,0.1) 
+ticklocsx <- seq(-1,1,1)    # locations of tick marks on x axis
+ticklocsy <- seq(0,0.1,0.025)    # locations of tick marks on y axis
+ticklabelsx <- c('1/10','1','10')        # set labels for x ticks
+ticklabelsy <- ticklocsy*100    # set labels for y ticks
+
+plot(x=NULL,y=NULL,axes=FALSE, ann=FALSE, xlim=plotlims[1:2], ylim=plotlims[3:4])   
+axis(1, at=ticklocsx, tck=0.01, lab=F, lwd=2)     # plot tick marks (no labels)
+axis(2, at=ticklocsy, tck=0.01, lab=F, lwd=2)
+mtext(text = ticklabelsx, side = 1, at=ticklocsx)     # add the tick labels
+mtext(text = ticklabelsy, side = 2, at=ticklocsy, line=0.2) 
+title(xlab="Variance ratio (y/x)", col.lab=rgb(0,0,0), line=1.2, cex.lab=1.5)  
+title(ylab="Percent significant", col.lab=rgb(0,0,0), line=1.5, cex.lab=1.5)
+
+lines(c(-1,1),c(0.05,0.05),lty=2,lwd=2)
+
+hsig <- corvals*0
+csig <- corvals*0
+simdata <- matrix(0,nrow=nobs,ncol=2)
+for (cond in 1:length(corvals)){
+  for (simno in 1:nsims){
+    
+    xdata <- rnorm(nobs,mean=0,sd=sqrt(1/varratios[cond]))
+    ydata <- rnorm(nobs,mean=0,sd=sqrt(varratios[cond]))
+    simdata[,1] <- xdata
+    simdata[,2] <- ydata
+    
+    output <- tsqc.test(simdata,paired=FALSE)
+    if (output$p.value < 0.05){csig[cond] <- csig[cond] + 1}
+    output <- tsq1.test(simdata)
+    if (output$p.value < 0.05){hsig[cond] <- hsig[cond] + 1}
+  }}
+propc <- csig/nsims
+lines(corvals,propc,lty=1,lwd=4,col=nbdtpal[2])
+proph <- hsig/nsims
+lines(corvals,proph,lty=1,lwd=4,col=nbdtpal[1])
+
+legend(-0.25,0.1, c(expression('T'[circ]^2),expression('T'^2)), cex=1, col=nbdtpal[2:1],lty=1, lwd=3, box.lwd=2)
+
+nobs <- 10000
+corvals <- seq(-0.9,0.9,0.45)
+varratios <- 10^(corvals/2)
+simdata <- matrix(0,nrow=nobs,ncol=2)
+
+for (cond in 1:length(corvals)){
+  xdata <- rnorm(nobs,mean=0,sd=sqrt(1/varratios[cond]))
+  ydata <- rnorm(nobs,mean=0,sd=sqrt(varratios[cond]))
+  compdata <- data.frame(xdata,ydata)
+  
+  A <- cov(compdata)
+  ctr    <- colMeans(compdata) 
+  RR     <- chol(A)                               # Cholesky decomposition
+  angles <- seq(0, 2*pi, length.out=200)          # angles for ellipse
+  ell    <- 1 * cbind(cos(angles), sin(angles)) %*% RR  # ellipse scaled with factor 1
+  ellCtr <- sweep(ell, 2, ctr, "+")               # center ellipse to the data centroid
+  eigVal  <- eigen(A)$values
+  eigVec  <- eigen(A)$vectors
+  eigScl  <- eigVec  %*% diag(sqrt(eigVal))  # scale eigenvectors to length = square-root
+  xMat    <- rbind(ctr[1] + eigScl[1, ], ctr[1] - eigScl[1, ])
+  yMat    <- rbind(ctr[2] + eigScl[2, ], ctr[2] - eigScl[2, ])
+  ellBase <- cbind(sqrt(eigVal[1])*cos(angles), sqrt(eigVal[2])*sin(angles)) 
+  ellRot  <- eigVec %*% t(ellBase) 
+  
+  points(0.05*xdata[1:100]+corvals[cond],0.005*ydata[1:100]+0.02,pch=16,cex=0.5,col=nbdtpal[3])
+  matlines(0.1*xMat+corvals[cond], 0.01*yMat+0.02, lty=1, lwd=3, col="black")
+  lines(0.1*(ellRot+ctr)[1, ]+corvals[cond], 0.01*(ellRot+ctr)[2, ]+0.02, lwd=2)
+}
+text(-0.95,0.095,'(b)',cex=1.5)
+
+```
+
+
+## A novel method to test the assumptions of $T^2_{circ}$
+
+Despite the severe consequences of violating the assumptions of the $T^2_{circ}$ statistic, there is currently no accepted test for those assumptions that could be applied to real data. Victor and Mast [-@Victor1991] suggest that their test should be applicable to multiple repetitions of a stimulus condition collected from a single individual, whereas data from multiple participants may be less likely to exhibit independence of the real and imaginary components [@Pei2017]. 
+
+One convenient way to test the assumptions of $T^2_{circ}$ is to assess the _condition index_ of a data set, which describes the ratio of eigenvalues for a cloud of points. The eigenvectors are the major and minor axes of the bounding ellipse (the straight lines in the example icons at the foot of Figure \@ref(fig:falsealarms)a,b). Conventionally, the condition index is calculated as the square root of the longest/shortest eigenvector length. For uncorrelated random numbers the distribution of condition indices is positively skewed, with a minimum of 1 [@Edelman1988]. This is because two independent samples of numbers from the same underlying distribution will still by chance have unequal eigenvectors. Edelman [-@Edelman1988] provides an equation (Eq 14) for the probability density function of condition indices (x) as a function of sample size (n):
+
+$pdf = (n-1)2^{n-1}\frac{x^2 - 1}{(x^2 + 1)^n}x^{(n-2)}$
+
+Attempts to validate this by simulation suggest that for small sample sizes (n<10) a closer approximation is given by:
+
+$pdf = (n-2)2^{n-2}\frac{x^2 - 1}{(x^2 + 1)^{(n-1)}}x^{(n-3)}$
+
+In Figure \@ref(fig:distcomparison)a we show an example distribution derived from the second expression (black curve), the inverse cumulative density function (red curve), and simulations from 100000 random data sets for n=10 (blue shading). The vertical lines show the critical (95%) threshold for the analytic and simulated results. Figure \@ref(fig:distcomparison)b shows how these thresholds change as a function of the number of observations, and it is clear that the modified expression (red) most closely approximates the simulation results (blue).
+
+```{r distcomparison, fig.cap='d', fig.align="center", fig.width=9, fig.height=5, echo=FALSE}
+
+par(mfrow=c(1,2), las=1)
+
+n <- 10
+x <- seq(1,20,0.01)
+nr <- n-1
+pdffunction <- ((nr-1)*(2^(nr-1))) * ((x^2 - 1)/((x^2+1)^nr)) * (x^(nr-2))
+
+plotlims <- c(1,5,0,1) 
+ticklocsx <- seq(1,5,1)    # locations of tick marks on x axis
+ticklocsy <- seq(0,1,0.2)    # locations of tick marks on y axis
+plot(x=NULL,y=NULL,axes=FALSE, ann=FALSE, xlim=plotlims[1:2], ylim=plotlims[3:4])   
+axis(1, at=ticklocsx, tck=0.01, lab=F, lwd=2)     # plot tick marks (no labels)
+axis(2, at=ticklocsy, tck=0.01, lab=F, lwd=2)
+mtext(text = ticklocsx, side = 1, at=ticklocsx)     # add the tick labels
+mtext(text = ticklocsy, side = 2, at=ticklocsy, line=0.2) 
+title(xlab="Eigenvalue ratio", col.lab=rgb(0,0,0), line=1.2, cex.lab=1.5)  
+title(ylab="Probability", col.lab=rgb(0,0,0), line=1.5, cex.lab=1.5)
+
+lines(x,pdffunction/max(pdffunction))
+cdfinverse <- 1-(cumsum(pdffunction)/sum(pdffunction))
+lines(x,cdfinverse,col=nbdtpal[2])
+lines(c(1,5),c(0.05,0.05),lty=2,col=nbdtpal[1])
+criticalx <- x[min(which(cdfinverse<=0.05))]
+lines(c(criticalx,criticalx),c(0,1),col=nbdtpal[2],lwd=2)
+
+simvect <- NULL
+for (s in 1:nsims){
+  simdata <- matrix(rnorm(2*n,mean=0,sd=1),nrow=n,ncol=2)
+  evs <- eigen(cov(simdata)) 
+  simvect[s] <- sqrt(evs$values[1]/evs$values[2])
+}
+
+a <- hist(simvect,breaks = 200, plot=FALSE)
+axvals <- a$mids
+ayvals <- a$counts/max(a$counts)
+polygon(c(1,axvals,1), c(0,ayvals,0), col=addalpha(nbdtpal[3],alpha=0.2),border=NA)
+simcrit <- quantile(simvect,0.95)
+lines(c(simcrit,simcrit),c(0,1),col=nbdtpal[3],lwd=2,lty=2)
+
+x <- seq(1,50,0.01)
+edelman1 <- NULL
+edelman2 <- NULL
+simratios <- NULL
+for (n in 3:25){
+nr <- n
+exactpdf <- ((nr-1)*(2^(nr-1))) * ((x^2 - 1)/((x^2+1)^nr)) * (x^(nr-2))
+cdfinverse <- 1-(cumsum(exactpdf)/sum(exactpdf))
+edelman1[n-2] <- x[min(which(cdfinverse<=0.05))]
+
+nr <- n - 1
+exactpdf <- ((nr-1)*(2^(nr-1))) * ((x^2 - 1)/((x^2+1)^nr)) * (x^(nr-2))
+cdfinverse <- 1-(cumsum(exactpdf)/sum(exactpdf))
+edelman2[n-2] <- x[min(which(cdfinverse<=0.05))]
+
+simvect <- NULL
+for (s in 1:nsims){
+  simdata <- matrix(rnorm(2*n,mean=0,sd=1),nrow=n,ncol=2)
+  evs <- eigen(cov(simdata))
+  simvect[s] <- sqrt(evs$values[1]/evs$values[2])
+}
+simratios[n-2] <- quantile(simvect,0.95)
+}
+
+plotlims <- c(0,25,0,25) 
+ticklocsx <- seq(0,25,5)    # locations of tick marks on x axis
+ticklocsy <- seq(0,25,5)    # locations of tick marks on y axis
+plot(x=NULL,y=NULL,axes=FALSE, ann=FALSE, xlim=plotlims[1:2], ylim=plotlims[3:4])   
+axis(1, at=ticklocsx, tck=0.01, lab=F, lwd=2)     # plot tick marks (no labels)
+axis(2, at=ticklocsy, tck=0.01, lab=F, lwd=2)
+mtext(text = ticklocsx, side = 1, at=ticklocsx)     # add the tick labels
+mtext(text = ticklocsy, side = 2, at=ticklocsy, line=0.2) 
+title(xlab="Number of observations", col.lab=rgb(0,0,0), line=1.2, cex.lab=1.5)
+title(ylab="Threshold", col.lab=rgb(0,0,0), line=1.5, cex.lab=1.5)
+
+lines(3:25,edelman1,lwd=2,col=nbdtpal[1])
+lines(3:25,edelman2,lwd=2,col=nbdtpal[2])
+lines(3:25,simratios,lwd=2,col=nbdtpal[3])
+legend(12, 25, c("Edelman","Modified","Simulation"), cex=0.8, col=nbdtpal, lty=1, lwd=3, box.lwd=2)
+
+```
+
+The eigenvalue ratio can be used as a test of the assumptions of $T^2_{circ}$. If we observe a condition index above the critical threshold for the number of observations then the data set can be said to significantly violate the assumption of equal eigenvalues. Because our modified equation provides an inverse density function (red curve in Figure \@ref(fig:distcomparison)a), we can use this to calculate a p-value for the test. If the test is non-significant, one can proceed with $T^2_{circ}$; if it is significant, $T^2$ should be used instead. 
+
+
+## Identifying and removing outliers using the Mahalanobis distance
+
+If a data set produces a significant result using the condition index test, this could be due to the presence of one or more outliers. The Mahalanobis distance [@Mahalanobis1936] is a useful metric for identifying such multivariate outliers so that they can be excluded. It calculates the Euclidean distance between each data point and the centroid, and scales it by the variance in the direction of the vector that joins the two points. This means that any correlations in the data set are taken into account when calculating the distance metric, D.
+
+The effectiveness of this approach to outlier exclusion can be assessed by simulation using the condition index test. Figure \@ref(fig:outlierplot) shows the proportion of significant condition index tests as a function of the Mahalanobis distance of a single outlier, for a range of sample sizes (curves). In all cases, the functions depart from the Type 1 error rate ($\alpha$ = 0.05; horizontal dashed line in Figure \@ref(fig:outlierplot)) when the Mahalanobis distance exceeds a value around 3. This seems a reasonable heuristic for outlier exclusion, and is the multivariate equivalent of excluding data points more than 3 standard deviations from the mean. Following this heuristic should reduce the likelihood that outliers will invalidate the assumptions of the $T^2_{circ}$ test.
+
+```{r outlierplot, fig.cap='d', fig.align="center", echo=FALSE}
+
+dlist <- seq(0,8,0.5)
+slist <- seq(2,6,1)
+samplesizes <- ceiling(2^slist)
+
+nsig <- matrix(0,nrow=length(samplesizes),ncol=length(dlist))
+for (s in 1:length(samplesizes)){
+  for (d in 1:length(dlist)){
+    for (n in 1:nsims){
+    data <- matrix(rnorm(2*samplesizes[s]),nrow=samplesizes[s],ncol=2)
+    data[1,] <- c(dlist[d],0)
+    output <- CI.test(data)
+    if(output$pval<0.05){nsig[s,d] <- nsig[s,d] + 1}
+    }
+  }
+}
+
+propsig <- nsig/nsims
+
+plotlims <- c(0,8,0,1) 
+ticklocsx <- seq(0,8,1)    # locations of tick marks on x axis
+ticklocsy <- seq(0,1,0.2)    # locations of tick marks on y axis
+plot(x=NULL,y=NULL,axes=FALSE, ann=FALSE, xlim=plotlims[1:2], ylim=plotlims[3:4])   
+axis(1, at=ticklocsx, tck=0.01, lab=F, lwd=2)     # plot tick marks (no labels)
+axis(2, at=ticklocsy, tck=0.01, lab=F, lwd=2)
+mtext(text = ticklocsx, side = 1, at=ticklocsx)     # add the tick labels
+mtext(text = ticklocsy, side = 2, at=ticklocsy, line=0.2, las=1) 
+title(xlab="Outlier Mahalanobis distance", col.lab=rgb(0,0,0), line=1.2, cex.lab=1.5)
+title(ylab="Proportion significant", col.lab=rgb(0,0,0), line=1.5, cex.lab=1.5)
+
+lines(c(0,8),c(0.05,0.05),lty=2,lwd=2)
+
+for (s in 1:length(samplesizes)){
+  lines(dlist,propsig[s,],lwd=3,col=nbdtpal[s])
+}
+
+legend(0,1,samplesizes,col=nbdtpal,lwd=3,box.lwd=2,title='N observations')
+
+```
+
+## Methods for calculating error bars for Fourier amplitudes
+
+
+## Applying these methods to real data sets
+
+### Human visual steady-state data
+
+
+### Mouse auditory steady-state data
+
+https://www.nature.com/articles/s41597-020-00621-z
+https://doi.gin.g-node.org/10.12751/g-node.e5tyek/
+
+
+## Recommendations for analysing periodic data
+
+Multi/Bivariate statistics should be used for phase-locked Fourier data
+
+Always remove outliers with a Mahalanobis distance > 3
+
+Always test assumptions if using $T^2_{circ}$
+
+No benefit to using tsqcirc for sample sizes>32
+
+With more than two conditions use MANOVA
+
+Use bootstrapping to calculate error bars
+
+
+
+## Further considerations
+
+Mention about non phase-locked responses
+
+Greater power with coherent averaging
+
+Could develop ANOVA-circ
+
+
+
+
+
+## References
