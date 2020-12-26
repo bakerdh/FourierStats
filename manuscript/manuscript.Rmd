@@ -25,9 +25,10 @@ if (length(missingpackages)>0){install.packages(missingpackages)}
 toinstall <- packagelist[which(!packagelist %in% (.packages()))]
 invisible(lapply(toinstall,library,character.only=TRUE))
 
-nsims <- 100  # global value for the whole script - increase to 100000 for final run
+nsims <- 10000  # global value for the whole script - increase to 100000 for final run
 
-nbdtpal <- c(rgb(0,0,0),rgb(187/255,40/255,107/255),rgb(56/255,111/255,164/255),'darkgreen','darkorange')
+# palette using the main colours from the NBDT journal logo
+nbdtpal <- c(rgb(0,0,0),rgb(0.73,0.16,0.42),rgb(0.22,0.44,0.64),'darkgreen','darkorange')
 
 tsq1.test <- function(data,mu=NULL){
   # function to calculate a one-sample t-squared test after Hotelling (1931)
@@ -245,7 +246,6 @@ getel <- function(compdata){
   ellRot  <- eigVec %*% t(ellBase) 
   return(ellRot)
   }
-  
 
 v4Interp <- function(df, xo, yo, rmax = .75, gridRes = 67) {
   ## Create a function to perform Matlab's v4 interpolation.
@@ -271,14 +271,13 @@ v4Interp <- function(df, xo, yo, rmax = .75, gridRes = 67) {
   names(outDf)[1:length(yo[1,])+1] <- yo[1,]
   return(outDf)}
 
-
 addalpha <- function(col, alpha=1){apply(sapply(col, col2rgb)/255, 2, function(x) rgb(x[1], x[2], x[3], alpha=alpha))}
 
 ```
 
 # Abstract
 
-Many experimental paradigms in neuroscience involve driving the nervous system with periodic sensory stimuli. Neural signals can then be recorded, and include phase-locked oscillations at the stimulation frequency. The analysis of such data often involves standard univariate statistics such as T-tests, conducted on the Fourier amplitude components. However, the assumptions of these tests will often be violated because amplitudes are not normally distributed, and weak signals might be missed if the phase information is discarded. An alternative approach is to conduct multivariate statistical tests using the real and imaginary Fourier components. Here we compare the performance of two multivariate extensions of the T-test, Hotelling's $T^2$ and a variant called $T^2_{circ}$. We develop a novel test of the assumptions of $T^2_{circ}$ based on the condition index, and a heuristic for excluding outliers using the Mahanalobis distance. We then extend the statistic to multi-level designs, and propose a new statistical test termed $ANOVA^2_{circ}$. This has identical assumptions to $T^2_{circ}$, and is shown to be more sensitive than MANOVA when these assumptions are met. We demonstrate how these tests might be applied to two publicly available empirical data sets, and suggest concrete guidance for choosing which test to run. Implementations of these novel tools are provided as _R_ functions, and we hope that their wider adoption will improve the sensitivity of statistical inferences involving periodic data.
+Many experimental paradigms in neuroscience involve driving the nervous system with periodic sensory stimuli. Neural signals recorded with a variety of techniques will then include phase-locked oscillations at the stimulation frequency. The analysis of such data often involves standard univariate statistics such as T-tests, conducted on the Fourier amplitude components. However, the assumptions of these tests will often be violated because amplitudes are not normally distributed, and furthermore weak signals might be missed if the phase information is discarded. An alternative approach is to conduct multivariate statistical tests using the real and imaginary Fourier components. Here we compare the performance of two multivariate extensions of the T-test: Hotelling's $T^2$ and a variant called $T^2_{circ}$. We develop a novel test of the assumptions of $T^2_{circ}$ based on the condition index, and suggest a heuristic for excluding outliers using the Mahanalobis distance. We then extend the statistic to multi-level designs, and propose a new statistical test termed $ANOVA^2_{circ}$. This has identical assumptions to $T^2_{circ}$, and is shown to be more sensitive than MANOVA when these assumptions are met. We demonstrate how these tests might be applied to two publicly available empirical data sets, and suggest concrete guidance for choosing which test to run. Implementations of these novel tools are provided as _R_ functions, and we hope that their wider adoption will improve the sensitivity of statistical inferences involving periodic data.
 
 # Background
 
@@ -394,6 +393,7 @@ for (n in 1:nsims){
 tsqpropM <- tsqmatrix/nsims
 circpropM <- circmatrix/nsims
 tsqvscirc <- circpropM - tsqpropM
+tsqvscirc <- pmax(tsqvscirc,0)  # sets any negative values to 0
 
 plotlims <- c(1,5,0,1)
 ticklocsx <- seq(1,5,1)    # locations of tick marks on x axis
@@ -671,12 +671,12 @@ mtext(text = ticklocsy, side = 2, at=ticklocsy, line=0.2)
 title(xlab="Condition index", col.lab=rgb(0,0,0), line=1.2, cex.lab=1.5)  
 title(ylab="Probability", col.lab=rgb(0,0,0), line=1.5, cex.lab=1.5)
 
-lines(x,pdffunction/max(pdffunction))
+lines(x,pdffunction/max(pdffunction),lwd=3)
 cdfinverse <- 1-(cumsum(pdffunction)/sum(pdffunction))
-lines(x,cdfinverse,col=nbdtpal[2])
+lines(x,cdfinverse,col=nbdtpal[2],lwd=3)
 lines(c(1,5),c(0.05,0.05),lty=2,col=nbdtpal[1])
 criticalx <- x[min(which(cdfinverse<=0.05))]
-lines(c(criticalx,criticalx),c(0,1),col=nbdtpal[2],lwd=2)
+lines(c(criticalx,criticalx),c(0,1),col=nbdtpal[2],lwd=3)
 
 simvect <- NULL
 for (s in 1:nsims){
@@ -690,7 +690,7 @@ axvals <- a$mids
 ayvals <- a$counts/max(a$counts)
 polygon(c(1,axvals,1), c(0,ayvals,0), col=addalpha(nbdtpal[3],alpha=0.2),border=NA)
 simcrit <- quantile(simvect,0.95)
-lines(c(simcrit,simcrit),c(0,1),col=nbdtpal[3],lwd=2,lty=2)
+lines(c(simcrit,simcrit),c(0,1),col=nbdtpal[3],lwd=3,lty=2)
 text(4.8,0.95,'(a)',cex=1.5)
 
 
@@ -729,9 +729,9 @@ mtext(text = ticklocsy, side = 2, at=ticklocsy, line=0.2)
 title(xlab="Number of observations", col.lab=rgb(0,0,0), line=1.2, cex.lab=1.5)
 title(ylab="Threshold", col.lab=rgb(0,0,0), line=1.5, cex.lab=1.5)
 
-lines(3:25,edelman1,lwd=2,col=nbdtpal[1])
-lines(3:25,edelman2,lwd=2,col=nbdtpal[2])
-lines(3:25,simratios,lwd=2,col=nbdtpal[3])
+lines(3:25,edelman1,lwd=3,col=nbdtpal[1])
+lines(3:25,edelman2,lwd=3,col=nbdtpal[2])
+lines(3:25,simratios,lwd=3,col=nbdtpal[3])
 legend(12, 15, c("Edelman","Modified","Simulation"), cex=0.8, col=nbdtpal, lty=1, lwd=3, box.lwd=2)
 text(23,24,'(b)',cex=1.5)
 
@@ -866,6 +866,7 @@ manout <- summary(manova(outcome ~ Group, data = dataforManova))
 manovapropM <- manovamatrix/nsims
 circpropM <- circmatrix/nsims
 manvscirc <- circpropM - manovapropM
+manvscirc <- pmax(manvscirc,0)  # sets any negative values to 0
 
 plotlims <- c(1,5,0,1)
 ticklocsx <- seq(1,5,1)    # locations of tick marks on x axis
@@ -951,7 +952,7 @@ Following ${ANOVA}^2_{circ}$, one could calculate $T^2_{circ}$ statistics to mak
 
 # Deciding which test to run
 
-The flowchart in Figure \@ref(fig:flowchart) contains a proposed decision structure for the analysis of periodic data. Initially, data for each condition should be tested against the expected distribution of eigenvalue ratios. Comparisons with one or two conditions should be tested with the $T^2_{circ}$ statistic if the eigenvalue ratios are consistent with circularity, and the $T^2$ statistic if not. Comparisons with more than two conditions should be tested with the $ANOVA^2_{circ}$ statistic if the eigenvalue ratios are consistent with circularity, or a MANOVA if not. Some MANOVA implementations cannot deal with random factors (repeated measures) in complex factorial designs. In _R_, the _Manova_ function from the _car_ package appears to be capable of the necessary calculations, as does the commercial software package SPSS.
+The flowchart in Figure \@ref(fig:flowchart) contains a proposed decision structure for the analysis of periodic data, once any outliers have been removed. Initially, data for each condition should be tested against the expected distribution of eigenvalue ratios. Comparisons with one or two conditions should be tested with the $T^2_{circ}$ statistic if the eigenvalue ratios are consistent with circularity, and the $T^2$ statistic if not. Comparisons with more than two conditions should be tested with the $ANOVA^2_{circ}$ statistic if the eigenvalue ratios are consistent with circularity, or a MANOVA if not. Some MANOVA implementations cannot deal with random factors (repeated measures) in complex factorial designs. In _R_, the _Manova_ function from the _car_ package appears to be capable of the necessary calculations, as does the commercial software package SPSS.
 
 ```{r flowchart, fig.cap = 'Flowchart illustrating how one might decide which test to conduct for a given data set, based on the study design and the outcome of the condition index test.', fig.align="center", echo=FALSE}
 
@@ -989,7 +990,7 @@ Having developed some novel tools for the analysis of periodic data, in the foll
 
 Hwang et al. [-@Hwang2019; -@Hwang2020] measured steady-state responses using implanted scalp electrodes in 6 mice. The mice had previously been given a targeted virus that made parvalbumin neurons in their basal forebrain responsive to specific wavelengths of light, delivered through an optical fiber (a technique called optogenetics). SSVEPs were recorded from 36 electrodes for 1 second epochs of 40 Hz auditory stimulation, and various schedules of optogenetic stimulation (including at 40 Hz). The data set is described more fully by Hwang et al. [-@Hwang2020], and was downloaded from: [https://doi.gin.g-node.org/10.12751/g-node.e5tyek/](https://doi.gin.g-node.org/10.12751/g-node.e5tyek/). 
 
-Figure \@ref(fig:mousedata)a shows Fourier amplitude spectra at two frontal electrodes (marked black in the insets) for auditory stimulation (red) and optogenetic stimulation (blue), each at 40 Hz. There is a clear frequency-locked signal with approximately equal amplitude for each stimulation modality. Indeed, a paired t-test on the amplitudes reveals no significant difference (t=0.84, df=5, p=0.44). However, inspection of the complex Fourier components for each condition suggests evidence of a phase difference between the two modalities (see Figure \@ref(fig:mousedata)b). The condition index test was non-significant for both conditions (sound: CI = 1.59, _p_ = 0.66; light: CI = 1.69, _p_ = 0.59), so a paired-samples $T^2_{circ}$ test was conducted. This revealed a significant difference between conditions ($T^2_{circ}$ = 1.39, $F_{(2,10)}$ = 8.32, _p_ = 0.007) with an effect size of D = 1.02. This demonstrates that both sound and (optogenetic) light are able to entrain neural responses - the original study by Hwang et al. [-@Hwang2019] went on to explore interactions between these two signals.
+Figure \@ref(fig:mousedata)a shows Fourier amplitude spectra at two frontal electrodes (marked black in the insets) for auditory stimulation (red) and optogenetic stimulation (blue), each at 40 Hz. There is a clear frequency-locked signal with approximately equal amplitude for each stimulation modality. Indeed, a paired univariate T-test on the amplitudes reveals no significant difference (_t_ = 0.84, _df_ = 5, _p_ = 0.44). However, inspection of the complex Fourier components for each condition suggests evidence of a phase difference between the two modalities (see Figure \@ref(fig:mousedata)b). The condition index test was non-significant for both conditions (sound: CI = 1.59, _p_ = 0.66; light: CI = 1.69, _p_ = 0.59), so a paired-samples $T^2_{circ}$ test was conducted. This revealed a significant difference between conditions ($T^2_{circ}$ = 1.39, $F_{(2,10)}$ = 8.32, _p_ = 0.007) with an effect size of D = 1.02. This demonstrates that both sound and (optogenetic) light are able to entrain neural responses - the original study by Hwang et al. [-@Hwang2019] went on to explore interactions between these two signals.
 
 ```{r mousedata, fig.cap = 'Summary of mouse steady-state responses to 40 Hz stimulation. Panel (a) shows the Fourier amplitude spectrum with inset scalp plots for sound (red) and light (blue) stimulation, averaged across repetitions and individuals. Panel (b) shows complex (x = real, y = imaginary) Fourier components for 6 individual mice (small points) and their average (large points) for both conditions.', fig.width=10, fig.height=6, fig.align="center", echo=FALSE}
 
@@ -1244,13 +1245,13 @@ With the outlier points removed, all seven conditions resulted in non-significan
 
 # Further considerations
 
-It is worth pointing out that the statistical tests discussed in this paper are applicable only when the signal phase is expected to be consistent across observations. This is the case for most paradigms in which the nervous system is driven by a periodic stimulus. However, they are less obviously applicable to the analysis of endogenous neural oscillations and brain rhythms [@Berger1929; @Buzsaki2004], which will typically have random phase and broader bandwidths in the Fourier domain: other analysis methods have been developed for such signals [e.g. @Canolty2010]. When phases are consistent across repetitions, greater statistical power can be obtained by coherently averaging across repetitions to obtain a participant-level average [@Baker2020]. This practice is also necessary in order to use the multivariate methods discussed here, as the alternative is to discard the phase information and average amplitudes instead, rendering the data univariate.
+It is worth pointing out that the statistical tests discussed in this paper are applicable only when the signal phase is expected to be consistent across observations. This is the case for most paradigms in which the nervous system is driven by a periodic stimulus. However, they are less obviously applicable to the analysis of endogenous neural oscillations and brain rhythms [@Berger1929; @Buzsaki2004], which will typically have random phase and broader bandwidths in the Fourier domain: other analysis methods have been developed for such signals [e.g. @Canolty2010]. When phases are consistent across repetitions, greater statistical power can be obtained by coherently averaging across repetitions to obtain a participant-level average [@Baker2021]. This practice is also necessary in order to use the multivariate methods discussed here, as the alternative is to discard the phase information and average amplitudes instead, rendering the data univariate.
 
-The present paper has focussed on the Frequentist statistical tradition. However there are many advantages to the Bayesian approach, in which one can make direct quantitative comparisons of the evidence supporting both the experimental and null hypotheses. Subject to determining appropriate priors, Bayes factor scores might be calculated for all of the statistics considered here, much as has been done previously for univariate T-tests [@Rouder2009]. However this is a non-trivial undertaking, and is beyond the scope of the current paper.
+The present paper has focussed on the Frequentist statistical tradition. However there are many advantages to the Bayesian approach, in which one can make direct quantitative comparisons of the evidence supporting both the experimental and null hypotheses [@Jeffreys1961]. Subject to determining appropriate priors, Bayes factor scores might be calculated for all of the statistics considered here, much as has been done previously for univariate T-tests [@Rouder2009] and ANOVA [@Rouder2017]. However this is a non-trivial undertaking, and is beyond the scope of the current paper.
 
-Another possibility is to use machine learning techniques such as multivariate pattern analysis (MVPA) to analyse periodic data. This involvess training a classifier algorithm to distinguish between two (or more) experimental conditions or states, and then assessing classifier accuracy on fresh data. If different conditions produce distinct patterns of neural response, then classifier accuracy will be above chance. Such methods have been hugely influential in the fMRI literature, and for analysing event-related potential data collected using EEG or MEG. However, they have not been widely applied to steady-state data (though see West et al. [-@West2015] for an example). In principle, the real and imaginary Fourier components can be treated as separate dependent variables, along with different recording locations and/or frequencies. This approach has the potential to offer sensitive, high-powered statistical tests that circumvent many of the shortcomings associated with parametric statistics.
+Another possibility is to use machine learning techniques such as multivariate pattern analysis (MVPA) to analyse periodic data. This involvess training a classifier algorithm to distinguish between two (or more) experimental conditions or states, and then assessing classifier accuracy on fresh data. If different conditions produce distinct patterns of neural response, then classifier accuracy will be above chance. Such methods have been hugely influential in the fMRI literature [@Schwarzkopf2011], and for analysing event-related potential data collected using EEG or MEG [@Grootswagers2017]. However, they have not been widely applied to steady-state data (though see West et al. [-@West2015] for an example). In principle, the real and imaginary Fourier components can be treated as separate dependent variables, along with different recording locations and/or frequencies. This approach has the potential to offer sensitive, high-powered statistical tests that circumvent many of the shortcomings associated with traditional statistics.
 
-Even when statistics are conducted using both the real and imaginary Fourier components, it is still typical to visualise the mean amplitudes. Several approaches to calculating appropriate error bars have been proposed. For example, Pei et al. [-@Pei2017] suggest calculating the nearest and farthest points from the origin on the bounding ellipse, and using these to derive standard errors for the amplitude. This approach is somewhat computationally demanding, though we have implemented an _R_ function to calculate error bars using this method. However, we feel that bootstrap resampling offers a powerful and general alternative for calculating 95% confidence intervals on amplitudes. This is achieved by resampling the complex data (with replacement) and calculating a resampled complex mean. The amplitude is then derived for this resampled mean, and the procedure repeated a large number of times (1000 or 10000 repetitions is typical) to build up a population of resampled amplitudes. Upper and lower 95% confidence intervals on the amplitude can then be taken at appropriate quantiles of this population. 
+Even when statistics are conducted using both the real and imaginary Fourier components, it is still typical to visualise the mean amplitudes. Several approaches to calculating appropriate error bars have been proposed. For example, Pei et al. [-@Pei2017] suggest calculating the nearest and farthest points from the origin on the bounding ellipse, and using these to derive standard errors for the amplitude. This approach is somewhat demanding, though we have implemented an _R_ function to calculate error bars using this method (available through the _getampCI_ function). However, we feel that bootstrap resampling offers a powerful and general alternative for calculating 95% confidence intervals on amplitudes. This is achieved by resampling the complex data (with replacement) and calculating a resampled complex mean. The amplitude is then derived for this resampled mean, and the procedure repeated a large number of times (1000 or 10000 repetitions is typical) to build up a population of resampled amplitudes. Upper and lower 95% confidence intervals on the amplitude can then be taken at appropriate quantiles of this population. 
 
 # General recommendations for analysing periodic data
 
