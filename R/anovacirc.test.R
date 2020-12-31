@@ -1,19 +1,43 @@
 #' anovacirc.test: two-dimensional analysis of variance using complex data
-#' an extension of the logic of the t-squared circ statistic
-#' this is the one-way, between subjects implementation of the test
-#' the expected input is a long-format data frame with the following columns:
-#' simdata: the data stored as complex values
-#' grouplabels: condition labels indicating the level of the independent variable each data point corresponds to
+#' an extension of the logic of the T-squared circ statistic of Victor & Mast (1991)
+#' this is a one-way implementation of the test - if participant IDs are supplied a repeated measures version is conducted
+#'
+#' Inputs--
+#' data:  this can either be a vector of complex numbers, or a matrix
+#'        if it is a matrix, either the first column contains complex values, or the first two columns are the x and y (real and imaginary) values of the DV
+#'        if there are further columns, these are treated as the group labels and participant IDs
+#' group: condition labels indicating the level of the independent variable that each data point corresponds to
+#'        this is an optional input, but if it is supplied it supercedes values from the matrix
+#' participant: variable storing participant/subject IDs (i.e. the random factor) for repeated measures analysis
+#'        this is an optional input, but if it is supplied it supercedes values from the matrix
+#'
 #' see Baker (2021) for further details
 #' @export
-anovacirc.test <- function(data){
+anovacirc.test <- function(data, group=NULL, participant=NULL){
 
-  grouplabels <- data$grouplabels
-  datavals <- data$simdata
+  if (!is.matrix(data)){datavals <- data}
+
+  if (is.matrix(data)){d <- dim(data)
+  if (is.complex(data[,1])){datavals <- data[,1]
+  if (d[2]>1){grouplabels <- data[,2]}
+  if (d[2]>2){participantlabels <- data[,3]}}
+
+  if (!is.complex(data[,1])){datavals <- complex(real=data[,1],imaginary=data[,2])
+  if (d[2]>2){grouplabels <- data[,3]}
+  if (d[2]>3){participantlabels <- data[,4]}}
+  }
+
+  if (!is.null(group)){grouplabels <- group}
+  if (!is.null(participant)){participantlabels <- participant}
+
+  grouplabels <- as.factor(grouplabels)
   factorlist <- levels(grouplabels)
 
   grandmean <- mean(datavals)
 
+
+  # if no participant labels have been supplied, run a between-subjects ANOVA-circ
+  if (is.null(participantlabels)){
   groupmeans <- NULL
   for (n in 1:nlevels(grouplabels)){groupmeans[n] <- mean(datavals[which(grouplabels==factorlist[n])])}
 
@@ -34,13 +58,50 @@ anovacirc.test <- function(data){
 
   output <- NULL
   output$Fratio <- Fratio
-  output$pvalue <- pvalue
+  output$p.value <- pvalue
   output$SSM <- SSM
   output$SSR <- SSR
   output$dfM <- dfM
   output$dfR <- dfR
   output$MSM <- MSM
   output$MSR <- MSR
+}
+
+  # if participant labels have been supplied, run a repeated measures ANOVA-circ
+  if (!is.null(participantlabels)){
+  participantlabels <- as.factor(participantlabels)
+  participantlist <- levels(participantlabels)
+
+  SSW <- 0
+  for (n in 1:nlevels(participantlabels)){SSW <- SSW + sum(abs(datavals[which(participantlabels==participantlist[n])] - mean(datavals[which(participantlabels==participantlist[n])]))^2)}
+  dfW <- 2*(nlevels(participantlabels)*(nlevels(grouplabels)-1))
+
+  groupmeans <- NULL
+  for (n in 1:nlevels(grouplabels)){groupmeans[n] <- mean(datavals[which(grouplabels==factorlist[n])])}
+  SSM <- 0
+  for (n in 1:nlevels(grouplabels)){SSM <- SSM + length(which(grouplabels==factorlist[n]))*abs(groupmeans[n]-grandmean)^2}
+  dfM <- 2*(nlevels(grouplabels)-1)
+
+  SSR <- SSW - SSM
+  dfR <- dfW - dfM
+
+  MSM <- SSM/dfM
+  MSR <- SSR/dfR
+  Fratio <- MSM/MSR
+  pvalue <- pf(Fratio,df1=dfM,df2=dfR,lower.tail=FALSE)
+
+  output <- NULL
+  output$Fratio <- Fratio
+  output$p.value <- pvalue
+  output$SSW <- SSW
+  output$SSM <- SSM
+  output$SSR <- SSR
+  output$dfW <- dfW
+  output$dfM <- dfM
+  output$dfR <- dfR
+  output$MSM <- MSM
+  output$MSR <- MSR
+  }
 
   return(output)
 }

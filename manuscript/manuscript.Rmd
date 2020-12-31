@@ -11,7 +11,8 @@ output:
     df_print: paged
   pdf_document: default
 bibliography: bibliography.bib
-biblio-style: apalike
+csl: elife.csl
+# biblio-style: apalike
 ---
 
 ```{r setup, include=FALSE}
@@ -20,22 +21,26 @@ knitr::opts_chunk$set(echo = TRUE)
 # reasonably compact code to check which packages are installed, 
 # install the missing ones, and activate all
 
-# devtools::install_github("bakerdh/FourierStats")
-# devtools::install('FourierStats')
-
-packagelist <- c('bookdown','pals','pracma','shape','reshape2','diagram','HDMD','FourierStats')
+packagelist <- c('bookdown','pals','pracma','shape','reshape2','diagram','HDMD','devtools')
 missingpackages <- packagelist[!packagelist %in% installed.packages()[,1]]
 if (length(missingpackages)>0){install.packages(missingpackages)}
 toinstall <- packagelist[which(!packagelist %in% (.packages()))]
 invisible(lapply(toinstall,library,character.only=TRUE))
 
-nsims <- 10000  # global value for the whole script - increase to 100000 for final run
+# install the FourierStats package from github using the devtools package
+packagelist <- c('FourierStats')
+missingpackages <- packagelist[!packagelist %in% installed.packages()[,1]]
+if (length(missingpackages)>0){devtools::install_github("bakerdh/FourierStats")}
+toinstall <- packagelist[which(!packagelist %in% (.packages()))]
+invisible(lapply(toinstall,library,character.only=TRUE))
+
+nsims <- 10000  # global value for the whole script - increase to 100000 for final run, but note this takes around 15 hours to complete
 
 # palette using the main colours from the NBDT journal logo
 nbdtpal <- c(rgb(0,0,0),rgb(0.73,0.16,0.42),rgb(0.22,0.44,0.64),'darkgreen','darkorange')
 
 v4Interp <- function(df, xo, yo, rmax = .75, gridRes = 67) {
-  ## helper function to perform Matlab's v4 interpolation.
+  ## helper function to perform interpolation.
   ## Takes as input a data-frame with columns x, y, and z (x co-ordinates, y co-ordinates, and amplitude)
   ## and variables xo and yo, the co-ordinates which will be use to create a grid for interpolation
   xo <- matrix(rep(xo,length(yo)),nrow = length(xo),ncol = length(yo))
@@ -58,19 +63,22 @@ v4Interp <- function(df, xo, yo, rmax = .75, gridRes = 67) {
   names(outDf)[1:length(yo[1,])+1] <- yo[1,]
   return(outDf)}
 
+# helper function to add transparency to a colour
 addalpha <- function(col, alpha=1){apply(sapply(col, col2rgb)/255, 2, function(x) rgb(x[1], x[2], x[3], alpha=alpha))}
 
 ```
 
 # Abstract
 
-Many experimental paradigms in neuroscience involve driving the nervous system with periodic sensory stimuli. Neural signals recorded with a variety of techniques will then include phase-locked oscillations at the stimulation frequency. The analysis of such data often involves standard univariate statistics such as T-tests, conducted on the Fourier amplitude components. However, the assumptions of these tests will often be violated because amplitudes are not normally distributed, and furthermore weak signals might be missed if the phase information is discarded. An alternative approach is to conduct multivariate statistical tests using the real and imaginary Fourier components. Here we compare the performance of two multivariate extensions of the T-test: Hotelling's $T^2$ and a variant called $T^2_{circ}$. We develop a novel test of the assumptions of $T^2_{circ}$ based on the condition index, and suggest a heuristic for excluding outliers using the Mahanalobis distance. We then extend the statistic to multi-level designs, and propose a new statistical test termed $ANOVA^2_{circ}$. This has identical assumptions to $T^2_{circ}$, and is shown to be more sensitive than MANOVA when these assumptions are met. We demonstrate how these tests might be applied to two publicly available empirical data sets, and suggest concrete guidance for choosing which test to run. Implementations of these novel tools are provided as _R_ functions, and we hope that their wider adoption will improve the sensitivity of statistical inferences involving periodic data.
+Many experimental paradigms in neuroscience involve driving the nervous system with periodic sensory stimuli. Neural signals recorded with a variety of techniques will then include phase-locked oscillations at the stimulation frequency. The analysis of such data often involves standard univariate statistics such as T-tests, conducted on the Fourier amplitude components (ignoring phase). However, the assumptions of these tests will often be violated because amplitudes are not normally distributed, and furthermore weak signals might be missed if the phase information is discarded. An alternative approach is to conduct multivariate statistical tests using the real and imaginary Fourier components. Here the performance of two multivariate extensions of the T-test are compared: Hotelling's $T^2$ and a variant called $T^2_{circ}$. A novel test of the assumptions of $T^2_{circ}$ is developed, based on the condition index of the data (the square root of the ratio of eigenvalues of a bounding ellipse), and a heuristic for excluding outliers using the Mahalanobis distance is proposed. The $T^2_{circ}$ statistic is then extended to multi-level designs, resulting in a new statistical test termed $ANOVA^2_{circ}$. This has identical assumptions to $T^2_{circ}$, and is shown to be more sensitive than MANOVA when these assumptions are met. The use of these tests is demonstrated for two publicly available empirical data sets, and practical guidance is suggested for choosing which test to run. Implementations of these novel tools are provided as an _R_ package, in the hope that their wider adoption will improve the sensitivity of statistical inferences involving periodic data.
+
+_Keywords:_ multivariate statistics, Fourier analysis, steady-state, condition index, Mahalanobis distance.
 
 # Background
 
-A widely used paradigm in many branches of neuroscience is to drive the nervous system using periodic stimuli. This entrains neural responses at the stimulation frequency, resulting in high signal-to-noise ratios relative to single stimulus presentations. These periodic responses, often called the _steady-state_ or _frequency following_ response, can be recorded from single neurons [@Enroth-Cugell1966] and local field potentials [@Morrone1987] using invasive methods, or with non-invasive electroencephalography (EEG) and magnetoencephalography (MEG) systems, both in humans [@Norcia2015] and in diverse animal species including insects [@Afsari2014], birds [@Porciatti1990], rodents [@Hwang2019] and primates [@Nakayama1982]. Steady-state methods are used to measure early sensory responses in vision [@Regan1966], hearing [@Rees1986] and somatosensation [@Snyder1992], and closely related paradigms have been developed to target specific stimulus features such as orientation [@Braddick1986], and facial expression [@Gray2020] and identity [@Liu-Shuang2014]. In fMRI research, _travelling wave_ methods [@Engel1994; @Sereno1995] are used to map the retinotopic responses of early visual cortex using stimuli that change periodically in spatial position. Finally, physiological reflexes such as the pupillary response to light can be entrained in a similar way [@Spitschan2014].
+A widely used paradigm in many branches of neuroscience is to drive the nervous system using periodic stimuli. This entrains neural responses at the stimulation frequency, resulting in high signal-to-noise ratios relative to single stimulus presentations. These periodic responses, often called the _steady-state_ or _frequency following_ response, can be recorded using invasive methods from single neurons [@Enroth-Cugell1966] and local field potentials [@Morrone1987], or with non-invasive electroencephalography (EEG) and magnetoencephalography (MEG) systems, both in humans [@Norcia2015] and in diverse animal species including insects [@Afsari2014], birds [@Porciatti1990], rodents [@Hwang2019] and primates [@Nakayama1982]. Steady-state methods are used to measure early sensory responses in vision [@Regan1966], hearing [@Rees1986] and somatosensation [@Snyder1992], and closely related paradigms have been developed to target specific stimulus features such as orientation [@Braddick1986], and facial expression [@Gray2020] and identity [@Liu-Shuang2014]. In fMRI research, _travelling wave_ methods [@Engel1994; @Sereno1995] are used to map the retinotopic responses of early visual cortex using stimuli that change periodically in spatial position. Finally, physiological reflexes such as the pupillary response to light can be entrained in a similar way [@Spitschan2014].
 
-A convenient way to analyse the data from periodic stimulation experiments is to take the Fourier transform of the measured signal. The amplitude of the response at the stimulation frequency (and its harmonics - integer multiples of the stimulation frequency) is a convenient, and well-isolated index of the brain's response. Fourier spectra comprise both amplitude and phase information, which can be equivalently expressed as complex numbers with real and imaginary components. In many studies the phase information is routinely discarded, and statistical comparisons are performed on the amplitude data only. However an alternative is to use multivariate statistics, which take into account both the amplitude and phase information (represented as real and imaginary components). Multivariate methods have the advantage that they are more sensitive to weak signals, and therefore offer increased statistical power relative to univariate methods.
+A convenient way to analyse the data from periodic stimulation experiments is to take the Fourier transform of the measured signal. The amplitude of the response at the stimulation frequency (and its harmonics - integer multiples of the stimulation frequency) is a precise and well-isolated index of the brain's response. Fourier spectra comprise both amplitude and phase information, which can be equivalently expressed as complex numbers with real and imaginary components. In many studies the phase information is routinely discarded, and statistical comparisons are performed on the amplitude data only. However an alternative is to use multivariate statistics, which take into account both the amplitude and phase information (represented as real and imaginary components). Multivariate methods have the advantage that they are more sensitive to weak signals, and therefore offer increased statistical power relative to univariate methods.
 
 For pointwise and pairwise comparisons, Hotelling's $T^2$ statistic [@Hotelling1931] is a multivariate extension of the T-test. For the one-sample case, the test statistic is defined as:
 
@@ -79,26 +87,26 @@ For pointwise and pairwise comparisons, Hotelling's $T^2$ statistic [@Hotelling1
 T^2 = N(\bar{x} - \mu)' C^{-1} (\bar{x} - \mu),
 \end{equation}
 
-where _N_ is the number of observations, $\bar{x}$ is the multivariate sample mean, $\mu$ is the point of comparison, $C^{-1}$ is the inverse covariance matrix, and $'$ denotes vector transposition. Conceptually, the $T^2$ statistic extends the univariate T-statistic by incorporating the covariance between the dependent variables. Two-sample and paired variants are also available, and the test can be applied to an arbitrary number of dependent variables (though here we will consider only the bivariate case).
+where _N_ is the number of observations, $\bar{x}$ is the multivariate sample mean, $\mu$ is the point of comparison, $C^{-1}$ is the inverse covariance matrix, and $'$ denotes vector transposition. Conceptually, the $T^2$ statistic extends the univariate T-statistic by incorporating the covariance between the dependent variables. Two-sample and paired variants are also available, and the test can be applied with an arbitrary number of dependent variables (though here only the bivariate case will be considered).
 
-More recently, Victor and Mast [-@Victor1991] proposed a simpler version of $T^2$, called $T^2_{circ}$. The $T^2_{circ}$ statistic makes the strong assumption that the dependent variables (real and imaginary values) are uncorrelated and have equal variance. When these conditions are met, the test statistic for the one-sample case is defined as:
+More recently, Victor and Mast [-@Victor1991] proposed a simpler version of $T^2$, called $T^2_{circ}$. The $T^2_{circ}$ statistic makes the strong assumption that the dependent variables (real and imaginary Fourier components) are uncorrelated and have equal variance. When these conditions are met, the test statistic for the one-sample case is defined as:
 
 \begin{equation}
 \label{eq:t2c}
 T^2_{circ} = (N-1)\frac{|\bar{x}-\mu|^2}{\Sigma|x_j - \bar{x}|^2}
 \end{equation}
 
-where $x_j$ denotes the $j$th observation of the dependent variables, and all other terms retain their previous meanings. Notice that no covariance term is present in equation \@ref(eq:t2c), because of the independence assumption. This makes the statistic simpler to calculate, but causes problems when the assumption is violated (as we will demonstrate below). Conceptually, this statistic takes the vector difference between the centroid ($\bar{x}$) and a comparison point ($\mu$), and scales by the lengths of the residual vector lines joining each data point to the centroid. Two-sample and repeated measures versions of the $T^2_{circ}$ statistic are also possible.
+where $x_j$ denotes the $j$th observation of the dependent variables, and all other terms retain their previous meanings. Notice that no covariance term is present in equation \@ref(eq:t2c), because of the independence assumption. This makes the statistic simpler to calculate, but causes problems when the assumption is violated (as will be demonstrated below). Conceptually, this statistic takes the vector difference between the centroid ($\bar{x}$) and a comparison point ($\mu$), and scales by the mean length of the residual vector lines joining each data point to the centroid. Two-sample and repeated measures versions of the $T^2_{circ}$ statistic are also possible.
 
-In the present paper, we develop best practice guidelines for performing statistical tests on multivariate Fourier components derived from periodic stimulation paradigms. We first demonstrate why parametric univariate statistics are inappropriate for such data, because amplitudes for weak signals are not normally distributed. We then investigate conditions under which we should use either the $T^2$ or $T^2_{circ}$ statistic. The range of sample sizes and effect sizes where $T^2_{circ}$ is more sensitive is identified. We develop a novel method for testing the assumptions of the $T^2_{circ}$ statistic, based on calculating the condition index of a multivariate data set. Appropriate methods for identifying outliers using the Mahalanobis distance are discussed, and a heuristic proposed. Next the logic of $T^2_{circ}$ is extended to situations with more than two levels of the independent variable, and the performance of this novel $ANOVA^2_{circ}$ statistic is compared to MANOVA. Finally, we demonstrate the proposed techniques on two example SSVEP data sets, and recommend some best practice guidelines for analysis decisions.
+In the present paper, best practice guidelines are developed for performing statistical tests on multivariate Fourier components derived from periodic stimulation paradigms. It is first demonstrated why parametric univariate statistics are inappropriate for such data, because amplitudes for weak signals are not normally distributed. Then conditions are investigated under which either the $T^2$ or $T^2_{circ}$ statistic should be used. The range of sample sizes and effect sizes where $T^2_{circ}$ is more sensitive is identified. A novel method for testing the assumptions of the $T^2_{circ}$ statistic is developed, based on calculating the condition index of a multivariate data set. Appropriate methods for identifying outliers using the Mahalanobis distance are discussed, and a heuristic proposed. Next the logic of $T^2_{circ}$ is extended to situations with more than two levels of the independent variable, and the performance of this novel $ANOVA^2_{circ}$ statistic is compared to MANOVA. Finally, the proposed techniques are demonstrated on two example SSVEP data sets (from mice and humans), and best practice guidelines are recommended for analysis decisions.
 
-All scripts used to generate this manuscript are available at: [https://github.com/bakerdh/FourierStats](https://github.com/bakerdh/FourierStats). This includes an _R_ package, featuring functions to implement one-sample Hotelling's [-@Hotelling1931] $T^2$ statistic, Victor & Mast's [-@Victor1991] $T^2_{circ}$ statistic, and the condition index and $ANOVA^2_{circ}$ statistics proposed in this paper.
+All scripts used to generate this manuscript are available at: [https://github.com/bakerdh/FourierStats](https://github.com/bakerdh/FourierStats). This includes an _R_ package called _FourierStats_, featuring functions to implement a one-sample Hotelling's [-@Hotelling1931] $T^2$ statistic, Victor & Mast's [-@Victor1991] $T^2_{circ}$ statistic, and the condition index and $ANOVA^2_{circ}$ statistics proposed in this paper.
 
 # Fourier amplitudes violate parametric assumptions of univariate statistics
 
 Many empirical studies use univariate T-tests or analysis of variance (ANOVA) to analyse periodic data. Specifically, the amplitude component of the Fourier spectrum at the stimulation frequency is used as the dependent variable, discarding the phase information. This is problematic, because the amplitude is an absolute quantity, and can never fall below zero. Distributions of amplitudes for weak signals are therefore positively skewed, and will generally violate the assumption of normality.
 
-```{r amphists, fig.cap="Demonstration of skew in absolute Fourier amplitudes for weak signals. Signal strength is quantified as Cohen's d, defined as the ratio of the mean to the standard deviation of the sample. The upper row shows samples of 50 grey points, and the population mean (coloured points). The lower row shows kernel density functions generated from 100,000 amplitude values. Note that the mean phase of the signal is irrelevant for these simulations, and is shown in the positive x-direction for consistency.", fig.align="center", echo=FALSE, fig.width=12, fig.height=6}
+```{r amphists, fig.cap="Demonstration of skew in absolute Fourier amplitudes for signals of different strengths. Signal strength is quantified as Cohen's d, defined as the ratio of the mean to the standard deviation of the sample. The upper row shows samples of 50 grey points, and the population mean (coloured points). The lower row shows kernel density functions generated from 100,000 amplitude values. Note that the mean phase of the signal is irrelevant for these simulations, and is shown in the positive x-direction for consistency.", fig.align="center", echo=FALSE, fig.width=12, fig.height=6}
 
 npoints <- 50
 dlist <- c(0,0.5,1,2,4)
@@ -143,17 +151,17 @@ polygon(a$x+(d-1)*12,a$y,col=addalpha(nbdtpal[d],alpha=0.3),border=NA)
 
 ```
 
-The upper row of Figure \@ref(fig:amphists) shows scatterplots of simulated Fourier components, expressed using real (_x_) and imaginary (_y_) components. The amplitudes are the lengths of the lines joining each grey point to the origin. The lower row in Figure \@ref(fig:amphists) shows distributions of amplitudes for the same set of signal strengths. These distributions only approach normality when the signal strength is more than twice the standard deviation (Cohen's _d_ > 2; Cohen's _d_ is the mean difference scaled by the standard deviation, see Cohen [-@Cohen1988]). One consequence of this is that T-tests will potentially have an inflated Type 1 error (false positive) rate for many signals encountered empirically.
+The upper row of Figure \@ref(fig:amphists) shows scatterplots of simulated Fourier components, expressed using real (_x_) and imaginary (_y_) components. The amplitudes are the lengths of the lines joining each grey point to the origin. The lower row in Figure \@ref(fig:amphists) shows distributions of amplitudes for the same set of signal strengths. These distributions only approach normality when the signal strength is more than twice the standard deviation (Cohen's _d_ > 2; Cohen's _d_ is the mean difference scaled by the standard deviation, see Cohen [-@Cohen1988]). One consequence of this is that T-tests will potentially have an inflated Type I error (false positive) rate for many signals encountered empirically, especially if used to make pointwise comparisons to an amplitude of 0.
 
 Typical solutions, such as log-transforming the data, are unlikely to be equally applicable to all conditions. For example, if one wishes to compare a baseline where no stimulus was presented with a condition involving a strong signal, the former will be skewed and the latter normal. Applying a transform to both conditions is therefore problematic. Non-parametric statistics are a potential option, but these have generally lower statistical power than their parametric equivalents. Instead, the bivariate statistics discussed in the introduction avoid these issues and have greater statistical power, and should be used in preference to univariate methods.
 
 # Conditions under which $T^2_{circ}$ is more sensitive than $T^2$
 
-Using the $T^2$ or $T^2_{circ}$ statistic allows us to retain the phase information, and therefore have greater power than univariate T-tests, as well as avoiding problems caused by using absolute amplitude values. Victor & Mast [-@Victor1991] report simulations showing situations where $T^2_{circ}$ has greater power than $T^2$. This involved generating random data sets of different sample sizes, and different signal strengths, and comparing the number of such tests where each statistic was significant. Their simulations show the largest advantage for $T^2_{circ}$ for effect sizes around d = 1 (where the mean signal strength is equal to the standard deviation of the data). The advantage appeared to be stronger for smaller sample sizes.
+Using the $T^2$ or $T^2_{circ}$ statistic allows the phase information to be retained, and therefore provides greater power than univariate T-tests, as well as avoiding problems caused by using absolute amplitude values. Victor & Mast [-@Victor1991] report simulations showing situations where $T^2_{circ}$ has greater power than $T^2$. This involved generating random data sets of different sample sizes, and different signal strengths, and comparing the number of such tests where each statistic was significant. Their simulations show the largest advantage for $T^2_{circ}$ for effect sizes around _d_ = 1 (where the mean signal strength is equal to the standard deviation of the data). The advantage appeared to be stronger for smaller sample sizes.
 
-Here we replicate and extend these simulations (see Figure \@ref(fig:powerfig)), and confirm that the regime where $T^2_{circ}$ has greater power occurs particularly for large effect sizes and small sample sizes (see Figure \@ref(fig:powerfig)f). However, for effect sizes around 0.5 < _d_ < 1, $T^2_{circ}$ is more sensitive even with around 16 observations. This advantage is lost for large sample sizes (N > 32) and large effect sizes (_d_ > 2 when N > 8). These simulations suggest a straightforward heuristic - there is no advantage to using the $T^2_{circ}$ statistic for large sample sizes (when N > 32), so its use should be restricted to small sample studies.
+Here these simulations are replicated and extended (see Figure \@ref(fig:powerfig)), and it is shown that the regime where $T^2_{circ}$ has greater power occurs particularly for large effect sizes and small sample sizes (see Figure \@ref(fig:powerfig)f). However, for effect sizes around 0.5 < _d_ < 1, $T^2_{circ}$ is more sensitive even with around 16 observations. This advantage is lost for large sample sizes (N > 32) and large effect sizes (when _d_ > 2 and N > 8). These simulations suggest a straightforward heuristic - there is no advantage to using the $T^2_{circ}$ statistic for large sample sizes (when N > 32), so its use should be restricted to small sample studies.
 
-```{r powerfig, fig.cap="Simulations estimating the proportion of significant tests for simulated data with different sample sizes and effect sizes. Panels a-c replicate conditions reported by Victor and Mast (1991). Panels (d) and (e) show a wider range of conditions for each statistic. Panel (f) shows the difference between the two statistics, with contour lines indicating differences of 0.02, 0.05, 0.1, 0.2 and 0.4.", fig.align="center", echo=FALSE, fig.width=12, fig.height=8}
+```{r powerfig, fig.cap="Simulations estimating the proportion of significant tests for simulated data with different sample sizes and effect sizes (100,000 simulated data sets per condition). Panels a-c replicate conditions reported by Victor and Mast (1991). Panels (d) and (e) show a wider range of conditions for each statistic. Panel (f) shows the difference between the two statistics, with contour lines indicating differences of 0.02, 0.05, 0.1, 0.2 and 0.4.", fig.align="center", echo=FALSE, fig.width=12, fig.height=8}
 
 layout(matrix(1:6,nrow=2,ncol=3,byrow=TRUE))
 abc <- c('a','b','c')
@@ -264,11 +272,11 @@ text(1.1,3.8,'(f)',cex=2)
 
 # Limitations of $T^2_{circ}$ when assumptions are violated
 
-Although $T^2_{circ}$ can be more sensitive than $T^2$, this greater sensitivity relies on meeting the test's more stringent assumptions. The two variables must be independent (i.e. uncorrelated), and of equal variance. These restrictions may hold for some data sets, but it is instructive to ask what happens when they do not. Figure \@ref(fig:falsealarms) shows the results of simulations with randomly generated bivariate data in which no signal is present. When the data are uncorrelated and have equal variance (mid-points of the functions in each panel), both tests have the nominal Type I error (false positive) rate of $\alpha = 0.05$ (dashed line). However, as the data become increasingly correlated (Figure \@ref(fig:falsealarms)a), or the variances of the two dependent variables more disparate (Figure \@ref(fig:falsealarms)b), the Type I error rate of the $T^2_{circ}$ statistic (shown in red) increases by almost a factor of 2. In contrast, the $T^2$ statistic, which explicitly takes account of the covariance matrix (see equation \@ref(eq:t2eq)) shows no increase (black curves).
+Although $T^2_{circ}$ can be more sensitive than $T^2$, this greater sensitivity relies on satisfying the $T^2_{circ}$ test's more stringent assumptions. The two variables must be independent (i.e. uncorrelated), and of equal variance. These restrictions may hold for some data sets, but it is instructive to ask what happens when they do not. Figure \@ref(fig:falsealarms) shows the results of simulations with randomly generated bivariate data in which no signal is present. When the data are uncorrelated and have equal variance (mid-points of the functions in each panel), both tests have the nominal Type I error (false positive) rate of $\alpha = 0.05$ (horizontal dashed lines). However, as the data become increasingly correlated (Figure \@ref(fig:falsealarms)a), or the variances of the two dependent variables more disparate (Figure \@ref(fig:falsealarms)b), the Type I error rate of the $T^2_{circ}$ statistic (shown in red) increases by almost a factor of 2. In contrast, the $T^2$ statistic, which explicitly takes account of the covariance matrix (see equation \@ref(eq:t2eq)) shows no increase (black curves).
 
-```{r falsealarms, fig.width=6, fig.height=9, fig.cap='Simulations showing the Type I error rate for both tests as a function of the correlation between two variables (a) and the ratio of variances (b). Estimates are for 100000 simulations per condition, with N = 10 observations. The icons at the foot of each panel show example scatterplots with bounding ellipses and eigenvectors.', echo=FALSE}
+```{r falsealarms, fig.width=6, fig.height=7, fig.cap='Simulations showing the Type I error rate for both tests as a function of the correlation between two variables (a) and the ratio of variances (b). Estimates are for 100,000 simulated data sets per condition, with N = 10 observations. The icons at the foot of each panel show example scatterplots with bounding ellipses and eigenvectors.', echo=FALSE}
 
-par(mfrow=c(2,1))
+par(mfrow=c(2,1), mar=c(3,4,1,2))
 
 nobs <- 10
 corvals <- seq(-0.9,0.9,0.1)
@@ -420,29 +428,29 @@ text(-0.95,0.095,'(b)',cex=1.5)
 
 ```
 
-One possible remedy to control the Type I error rate would be to adjust the alpha level to compensate. However, this will reduce the statistical power of the $T^2_{circ}$ test, and its advantage over $T^2$ is relatively marginal in most situations to begin with (see Figure \@ref(fig:powerfig)). What is required is a method to objectively assess whether the assumptions of $T^2_{circ}$ hold, which we develop in the following section.
+One possible remedy to control the Type I error rate would be to adjust the alpha level to compensate. However, this will reduce the statistical power of the $T^2_{circ}$ test, and its advantage over $T^2$ is relatively marginal in most situations to begin with (see Figure \@ref(fig:powerfig)). What is required is a method to objectively assess whether the assumptions of $T^2_{circ}$ hold; this is developed in the following section.
 
 # A novel method to test the assumptions of $T^2_{circ}$
 
-Despite the severe consequences of violating the assumptions of the $T^2_{circ}$ statistic (see Figure \@ref(fig:falsealarms)), there is currently no accepted test for those assumptions that could be applied to an empirical data set. Victor and Mast [-@Victor1991] suggest that their test should be applicable to multiple repetitions of a stimulus condition collected from a single participant, whereas data pooled across multiple participants may be less likely to exhibit independence of the real and imaginary components [see also @Pei2017]. 
+Despite the severe consequences of violating the assumptions of the $T^2_{circ}$ statistic (see Figure \@ref(fig:falsealarms)), there is currently no accepted test of those assumptions that could be applied to an empirical data set. Victor and Mast [-@Victor1991] suggest that their test should be applicable to multiple repetitions of a stimulus condition collected from a single participant, whereas data pooled across multiple participants may be less likely to exhibit independence of the real and imaginary components [see also @Pei2017]. 
 
-One convenient way to test the assumptions of $T^2_{circ}$ is to assess the _condition index_ of a data set, which describes the ratio of eigenvalues for a cloud of points. The eigenvectors are the major and minor axes of the bounding ellipse (the straight lines in the example icons at the foot of Figure \@ref(fig:falsealarms)a,b). Conventionally, the condition index is calculated as the square root of the longest/shortest eigenvector length. For uncorrelated random numbers the distribution of condition indices is positively skewed, with a minimum of 1 [@Edelman1988]. This is because two independent samples of numbers from the same underlying distribution will still by chance have unequal eigenvectors. Edelman [-@Edelman1988] provides an equation (Eq 14) for the probability density function of condition indices (x) as a function of sample size (n):
+One convenient way to test the assumptions of $T^2_{circ}$ is to assess the _condition index_ of a data set, which describes the ratio of eigenvalues for a cloud of points. The eigenvectors are the major and minor axes of the bounding ellipse (the straight lines in the example icons at the foot of Figure \@ref(fig:falsealarms)a,b). Conventionally, the condition index is calculated as the square root of the longest/shortest eigenvector length. For uncorrelated random numbers the distribution of condition indices is positively skewed, with a minimum of 1 [@Edelman1988]. This is because two independent samples of numbers from the same underlying distribution will generally by chance have unequal eigenvectors, and the definition of the condition index ($\sqrt{longest/shortest}$) prevents its values dropping below 1 (values < 1 would imply that the shortest eigenvector is longer than the longest one). Edelman [-@Edelman1988] provides an equation (his Eq. 14) for the probability density function of condition indices (_x_) as a function of sample size (_N_):
 
 \begin{equation}
 \label{eq:edelman1}
-pdf = (n-1)2^{n-1}\frac{x^2 - 1}{(x^2 + 1)^n}x^{(n-2)},
+pdf = (N-1)2^{N-1}\frac{x^2 - 1}{(x^2 + 1)^N}x^{(N-2)},
 \end{equation}
 
-Attempts to validate this by simulation suggest that for small sample sizes (n<10) a closer approximation is given by:
+Attempts to validate this by simulation suggest that for small sample sizes (_N_ < 10) a closer approximation is given by:
 
 \begin{equation}
 \label{eq:edelman2}
-pdf = (n-2)2^{n-2}\frac{x^2 - 1}{(x^2 + 1)^{(n-1)}}x^{(n-3)}
+pdf = (N-2)2^{N-2}\frac{x^2 - 1}{(x^2 + 1)^{(N-1)}}x^{(N-3)}.
 \end{equation}
 
-In Figure \@ref(fig:distcomparison)a we show an example distribution derived from the second expression (black curve), the inverse cumulative density function (red curve), and simulations from 100000 random data sets for n=10 (blue shading). The vertical lines show the critical (95%) threshold for the analytic and simulated results - a ratio lying beyond this threshold can be considered to violate the assumption of either independence or equal variance. Figure \@ref(fig:distcomparison)b shows how these thresholds change as a function of the number of observations, and it is clear that the modified expression (red) most closely approximates the simulation results (blue).
+Figure \@ref(fig:distcomparison)a shows an example distribution derived from the second expression (black curve), the inverse cumulative density function (red curve), and simulations from 100,000 random data sets with _N_ = 10 (blue shading). The vertical lines show the critical (95%) threshold for the analytic and simulated results. A ratio lying beyond this threshold can be considered to violate the assumption of either independence or equal variance, because it has a condition index larger than expected by chance (assuming $\alpha$ = 0.05). Ratios below the threshold imply that the eigenvalues are equal (in a statistical sense). Figure \@ref(fig:distcomparison)b shows how these critical thresholds change as a function of the number of observations (N), and it is clear that the modified expression (red) most closely approximates the simulation results (blue).
 
-```{r distcomparison, fig.cap='Panel (a) shows the distribution of condition indices derived from Equation 4 (black curve), and by simulation (blue shading), for a sample size of 10 observations. The vertical blue and red lines show the 95 percent thresholds on the curve (where 95 percent of values lie to the left of the line), and the red curve shows the inverse density function. Panel (b) shows how 95 percent thresholds change as a functio of the number of observations.', fig.align="center", fig.width=9, fig.height=5, echo=FALSE}
+```{r distcomparison, fig.cap='Logic of the condition index test. Panel (a) shows the distribution of condition indices derived from Equation 4 (black curve), and by simulation (blue shading), for a sample size of N = 10 observations. The vertical blue and red lines show the 95 percent thresholds on the distributions (where 95 percent of values lie to the left of the line), and the red curve shows the inverse density function. Ellipse icons above panel (a) illustrate different condition indices between 1 and 5 (note that rotation does not affect the condition index). Panel (b) shows how 95 percent thresholds change as a function of the number of observations.', fig.align="center", fig.width=9, fig.height=5, echo=FALSE}
 
 par(mfrow=c(1,2), las=1)
 
@@ -451,16 +459,16 @@ x <- seq(1,20,0.01)
 nr <- n-1
 pdffunction <- ((nr-1)*(2^(nr-1))) * ((x^2 - 1)/((x^2+1)^nr)) * (x^(nr-2))
 
-plotlims <- c(1,5,0,1) 
+plotlims <- c(1,5,0,1.2) 
 ticklocsx <- seq(1,5,1)    # locations of tick marks on x axis
 ticklocsy <- seq(0,1,0.2)    # locations of tick marks on y axis
 plot(x=NULL,y=NULL,axes=FALSE, ann=FALSE, xlim=plotlims[1:2], ylim=plotlims[3:4])   
-axis(1, at=ticklocsx, tck=0.01, lab=F, lwd=2)     # plot tick marks (no labels)
+axis(1, at=ticklocsx, tck=0.01, lab=F, lwd=2)
 axis(2, at=ticklocsy, tck=0.01, lab=F, lwd=2)
-mtext(text = ticklocsx, side = 1, at=ticklocsx)     # add the tick labels
+mtext(text = ticklocsx, side = 1, at=ticklocsx)
 mtext(text = ticklocsy, side = 2, at=ticklocsy, line=0.2) 
 title(xlab="Condition index", col.lab=rgb(0,0,0), line=1.2, cex.lab=1.5)  
-title(ylab="Probability", col.lab=rgb(0,0,0), line=1.5, cex.lab=1.5)
+title(ylab="Probability density      ", line=1.5, cex.lab=1.5)
 
 lines(x,pdffunction/max(pdffunction),lwd=3)
 cdfinverse <- 1-(cumsum(pdffunction)/sum(pdffunction))
@@ -484,6 +492,14 @@ simcrit <- quantile(simvect,0.95)
 lines(c(simcrit,simcrit),c(0,1),col=nbdtpal[3],lwd=3,lty=2)
 text(4.8,0.95,'(a)',cex=1.5)
 
+xpos <- c(1.2,2.1,3,3.9,4.8)
+angles <- seq(0, 2*pi, length.out=200) 
+RR <- matrix(c(1,0,0,1),nrow=2,ncol=2)
+for (n in 1:5){
+  RR[2,2] <- 1/sqrt(n)
+  ell <- 1 * cbind(cos(angles), sin(angles)) %*% RR
+  polygon((ell[,1]*0.4*(5/6))+xpos[n],(ell[,2]/10)+1.1,col=rgb(0.9,0.9,0.9),border=NA)
+}
 
 x <- seq(1,50,0.01)
 edelman1 <- NULL
@@ -522,21 +538,21 @@ title(ylab="Threshold", col.lab=rgb(0,0,0), line=1.5, cex.lab=1.5)
 
 lines(3:25,edelman1,lwd=3,col=nbdtpal[1])
 lines(3:25,edelman2,lwd=3,col=nbdtpal[2])
-lines(3:25,simratios,lwd=3,col=nbdtpal[3])
-legend(12, 15, c("Edelman","Modified","Simulation"), cex=0.8, col=nbdtpal, lty=1, lwd=3, box.lwd=2)
+lines(3:25,simratios,lwd=3,lty=2,col=nbdtpal[3])
+legend(12, 15, c("Edelman","Modified","Simulation"), cex=0.8, col=nbdtpal, lty=c(1,1,2), lwd=3, box.lwd=2)
 text(23,24,'(b)',cex=1.5)
 
 ```
 
-The eigenvalue ratio can be used as a test of the assumptions of $T^2_{circ}$. If we observe a condition index above the critical threshold for the number of observations then the data set can be said to significantly violate the assumption of equal eigenvalues. Because our modified equation provides an inverse density function (red curve in Figure \@ref(fig:distcomparison)a), we can use this to calculate a p-value for the test. If the test is non-significant, one can proceed with $T^2_{circ}$; if it is significant, $T^2$ should be used instead. An _R_ function implementing this test is included in the project code repository (the _CI.test_ function contained in the _CItest.R_ script).
+The eigenvalue ratio can be used as a test of the assumptions of $T^2_{circ}$. If a condition index is observed that is above the critical threshold for the number of observations, then the data set can be said to significantly violate the assumption of equal eigenvalues. Because the modified equation provides an inverse density function (red curve in Figure \@ref(fig:distcomparison)a), this can be used to calculate a _p_-value for the test. If the test is non-significant, one can proceed with $T^2_{circ}$; if it is significant, $T^2$ should be used instead. An _R_ function implementing this test is included in the _FourierStats_ package (the _CI.test_ function).
 
 # Identifying and removing outliers using the Mahalanobis distance
 
 If a data set produces a significant result using the condition index test, this could be due to the presence of one or more outliers. The Mahalanobis distance [@Mahalanobis1936] is a useful metric for identifying such multivariate outliers so that they can be excluded. It calculates the Euclidean distance between each data point and the centroid, and scales it by the variance in the direction of the vector that joins the two points. This means that any correlations in the data set are taken into account when calculating the distance metric, D.
 
-The effectiveness of this approach to outlier exclusion can be assessed by simulation using the condition index test. Figure \@ref(fig:outlierplot) shows the proportion of significant condition index tests as a function of the Mahalanobis distance of a single outlier, for a range of sample sizes (curves). In all cases, the functions depart from the Type 1 error rate ($\alpha$ = 0.05; horizontal dashed line in Figure \@ref(fig:outlierplot)) when the Mahalanobis distance exceeds a value around 3. This seems a reasonable heuristic for outlier exclusion, and is the multivariate equivalent of excluding data points more than 3 standard deviations from the mean (note that many implementations of the Mahalanobis distance statistic return $D^2$, which can be converted to D by taking the square root). Following this heuristic should reduce the likelihood that outliers will invalidate the assumptions of the $T^2_{circ}$ test.
+The effectiveness of this approach to outlier exclusion can be assessed by simulation using the condition index test. Figure \@ref(fig:outlierplot) shows the proportion of significant condition index tests as a function of the Mahalanobis distance of a single outlier, for a range of sample sizes (curves). In all cases, the functions depart from the Type I error rate ($\alpha$ = 0.05; horizontal dashed line in Figure \@ref(fig:outlierplot)) when the Mahalanobis distance exceeds a value around 3. This seems a reasonable heuristic for outlier exclusion, and is the multivariate equivalent of excluding data points more than 3 standard deviations from the mean (note that many implementations of the Mahalanobis distance statistic, such as the core _mahalanobis_ function in _R_, return $D^2$, which can be converted to D by taking the square root). Following this heuristic should reduce the likelihood that outliers will invalidate the assumptions of the $T^2_{circ}$ test.
 
-```{r outlierplot, fig.cap='Simulations illustrating the Mahalanobis distance metric, and showing how a single outlier affects the condition index. The upper row shows three example data sets, each with a single outlier shown in red. The outliers have Mahalanobis distances of 1, 3 and 5. The ellipses are calculated with the outlier included (red) and excluded (black), illustrating how the outlier distorts the aspect ratio of the ellipse. The lower plot shows how the proportion of significant condition index tests depends on the outlier distance and the sample size.', fig.align="center", fig.width=7, fig.height=6, echo=FALSE}
+```{r outlierplot, fig.cap='Simulations illustrating the Mahalanobis distance metric, and showing how a single outlier affects the condition index. The upper row shows three example data sets, each with a single outlier shown in red. The outliers have approximate Mahalanobis distances of 1, 3 and 5. The ellipses are calculated with the outlier included (red) and excluded (black), illustrating how the outlier distorts the aspect ratio of the ellipse. The lower plot shows how the proportion of significant condition index tests depends on the outlier distance and the sample size.', fig.align="center", fig.width=7, fig.height=6, echo=FALSE}
 
 set.seed(2112)
 nobs <- 16
@@ -609,21 +625,21 @@ legend(0,1,samplesizes,col=nbdtpal,lwd=3,box.lwd=2,title='N observations')
 
 ```
 
-A variant of the Mahalanobis distance (the pairwise Mahalanobis distance) can also be used to compute a multivariate measure of effect size, equivalent to Cohen's _d_ statistic [see e.g. @Giudice2009]. This is a valuable statistic to include when reporting the results of multivariate tests, and we include an _R_ function (_mahalES_) that can be used to calculate it.
+A variant of the Mahalanobis distance (the pairwise Mahalanobis distance) can also be used to compute a multivariate measure of effect size, equivalent to Cohen's _d_ statistic [see e.g. @Giudice2009]. This is a valuable statistic to include when reporting the results of multivariate tests, and an _R_ function (_pairwise.mahalanobis_) to calculate it is available as part of the _HDMD_ package ([https://CRAN.R-project.org/package=HDMD](https://CRAN.R-project.org/package=HDMD)).
 
 # Controlling for multiple comparisons across location and time
 
-In many studies, it is important to compare responses over space and/or time. However with large numbers of sensors, voxels or temporal epochs, the familywise error rate quickly becomes problematic, inflating the Type I error (false positive) rate. Solutions such as Bonferroni correction, which adjust the alpha level based on the number of comparisons, are overly conservative and can obscure real effects by dramatically reducing power. An alternative approach is to use cluster correction methods to control the Type I error rate, using mass univariate tests [e.g. @Maris2007]. These typically involve summing test statistics such as T-values across adjacent significant locations and/or moments in time. The summed test statistic is compared to a null distribution generated from the same data by randomly permuting condition labels (or the sign of the data for one-sample tests). Such methods control the Type I error rate without substantially reducing statistical power. The same approach can be straightforwardly applied to the $T^2$ and $T^2_{circ}$ statistics. This allows a principled approach to identifying clusters of significant sensors, timepoints or frequencies responding to periodic stimuli. The _FourierStats_ package includes an implementation of this method with options for multivariate statistics (the _clustercorrect_ function).
+In some studies, it is important to compare responses over space and/or time. However with large numbers of sensors, voxels or temporal epochs, the familywise error quickly becomes problematic, inflating the Type I error (false positive) rate. Solutions such as Bonferroni correction, which adjust the $\alpha$ level based on the number of comparisons, are overly conservative and can obscure real effects by dramatically reducing power. An alternative approach is to use cluster correction methods to control the Type I error rate, using mass univariate tests [e.g. @Maris2007]. These typically involve summing test statistics such as T-values across adjacent significant locations and/or moments in time. The summed test statistic is compared to a null distribution generated from the same data by randomly permuting condition labels (or the sign of the data for one-sample tests). Such methods control the Type I error rate without substantially reducing statistical power. The same approach can be applied to the $T^2$ and $T^2_{circ}$ statistics. This allows a principled method for identifying clusters of significant sensors, timepoints or frequencies responding to periodic stimuli. The _FourierStats_ package includes an implementation of this method with options for multivariate statistics (the _clustercorrect_ function).
 
 # Generalising to more than two conditions
 
-Many studies involve more than two conditions that need to be compared. Issues with familywise error will quickly become problematic if multiple pairwise $T^2$ or $T^2_{circ}$ statistics are calculated. One possibility is to conduct a MANOVA, which takes covariances between dependent variables into account in much the same way as Hotelling's $T^2$, but permits multiple independent variables with more than two levels. However, if the assumptions of $T^2_{circ}$ hold for a data set, it might alternatively be possible to extend to logic of the $T^2_{circ}$ test [@Victor1991] to the more general case. 
+Many studies involve more than two conditions that need to be compared. Again, issues with familywise error will quickly become problematic if multiple pairwise $T^2$ or $T^2_{circ}$ statistics are calculated. One possibility is to conduct a MANOVA, which takes covariances between dependent variables into account in much the same way as Hotelling's $T^2$, but permits multiple independent variables with more than two levels. However, if the assumptions of $T^2_{circ}$ hold for a data set, it might alternatively be possible to extend the logic of the $T^2_{circ}$ test [@Victor1991] to the more general case. 
 
-The F statistic for a one-way ANOVA is calculated by taking the ratio of the variance explained by the modelled group means to the residual unexplained variance. For multivariate data, the change in group mean would be calculated using the vector distances between the complex means, and the residuals are the vector distances between each data point and its corresponding group mean. For an independent one-way design with $k$ groups (or conditions) and $N$ observations per group, the F distribution will have $2(k-1)$ and $2((Nk)-k)$ degrees of freedom. The difference between traditional univariate ANOVA is the factor of two scaling, which accounts for the additional degree of freedom for each complex-valued number. A suitable name for such a test might be ${ANOVA}^2_{circ}$, as this reflects the similarity to ANOVA, and the extension of the logic of $T^2_{circ}$ (an alternative name might be $MANOVA_{circ}$, however this feels less appropriate given that many of the key features of MANOVA are absent).
+The F-statistic for a one-way ANOVA is calculated by taking the ratio between the variance explained by the modelled group means, and the residual unexplained variance. For multivariate data, the change in group mean would be calculated using the vector distances between the complex means, and the residuals are the vector distances between each data point and its corresponding group mean. For an independent one-way design with $k$ groups (or conditions) and $N$ observations per group, the F-distribution will have $2(k-1)$ and $2((Nk)-k)$ degrees of freedom. The difference between traditional univariate ANOVA is the factor of two scaling, which accounts for the additional degree of freedom for each complex-valued number. A _p_-value can be derived from the F-distribution in the usual way.
 
-Figure \@ref(fig:powerfig2) shows simulations analogous to those in Figure \@ref(fig:powerfig) for a one-way design with three levels. MANOVA is directly compared to the ${ANOVA}^2_{circ}$ statistic across a range of effect sizes and sample sizes. Just as for the one-sample statistics, the advantages of ${ANOVA}^2_{circ}$ are particularly apparent for small sample sizes, and larger effect sizes (Figure \@ref(fig:powerfig2)f).
+A suitable name for such a test might be ${ANOVA}^2_{circ}$, as this reflects the similarity to ANOVA, and the extension of the logic of $T^2_{circ}$ (an alternative name might be $MANOVA_{circ}$, however this feels less appropriate given that many of the key features of MANOVA are absent). Figure \@ref(fig:powerfig2) shows simulations analogous to those in Figure \@ref(fig:powerfig) for a one-way between-subjects design with three levels. MANOVA is directly compared to the ${ANOVA}^2_{circ}$ statistic across a range of effect sizes and sample sizes. Just as for the one-sample statistics, the advantages of ${ANOVA}^2_{circ}$ are particularly apparent for small sample sizes, and larger effect sizes (Figure \@ref(fig:powerfig2)f).
 
-```{r powerfig2, fig.cap="Simulations comparing the sensitivity of MANOVA and ANOVA2circ. The format mirrors that of Figure 2. In these simulations, there were three conditions, with the signal being added to one condition.", fig.align="center", echo=FALSE, fig.width=12, fig.height=8}
+```{r powerfig2, fig.cap="Simulations comparing the sensitivity of MANOVA and ANOVA2circ. The format mirrors that of Figure 2. In these simulations, there were three conditions, with the signal being added to one condition only.", fig.align="center", echo=FALSE, fig.width=12, fig.height=8}
 
 layout(matrix(1:6,nrow=2,ncol=3,byrow=TRUE))
 abc <- c('a','b','c')
@@ -647,7 +663,7 @@ for (n in 1:nsims){
   simdata <- complex(real=data[,1],imaginary=data[,2])
   
   output <- anovacirc.test(data.frame(simdata,grouplabels))
-  if (output$pvalue<0.05){circmatrix[s,s2] <- circmatrix[s,s2] + 1}
+  if (output$p.value<0.05){circmatrix[s,s2] <- circmatrix[s,s2] + 1}
 
 dataforManova <- data.frame(grouplabels,data[,1],data[,2])    
 colnames(dataforManova) <- c("Group","Real","Imaginary")
@@ -743,11 +759,11 @@ text(1.1,3.8,'(f)',cex=2)
 
 ```
 
-Following ${ANOVA}^2_{circ}$, one could calculate $T^2_{circ}$ statistics to make post-hoc pairwise comparisons between conditions, providing that standard multiple comparison corrections are applied (e.g. Bonferroni correction). Univariate ANOVAs on the real and imaginary components are unlikely to be informative, as the relative magnitudes depend on stimulus phase (which is arbitrary). A repeated measures version of ${ANOVA}^2_{circ}$ has also been implemented following the same logic. The project repository contains _R_ scripts for both of these functions.
+Following ${ANOVA}^2_{circ}$, one could calculate $T^2_{circ}$ statistics to make post-hoc pairwise comparisons between conditions, providing that appropriate multiple comparison correction is applied (e.g. Bonferroni correction). Univariate ANOVAs on the real and imaginary components are unlikely to be informative, as the relative magnitudes depend on stimulus phase (which is arbitrary). A repeated measures version of ${ANOVA}^2_{circ}$ has also been implemented following the same logic. The project repository contains an _R_ function (_anovacirc.test_) to run both of these tests.
 
 # Deciding which test to run
 
-The flowchart in Figure \@ref(fig:flowchart) contains a proposed decision structure for the analysis of periodic data, once any outliers have been removed. Initially, data for each condition should be tested against the expected distribution of eigenvalue ratios. Comparisons with one or two conditions should be tested with the $T^2_{circ}$ statistic if the eigenvalue ratios are consistent with circularity, and the $T^2$ statistic if not. Comparisons with more than two conditions should be tested with the $ANOVA^2_{circ}$ statistic if the eigenvalue ratios are consistent with circularity, or a MANOVA if not. Some MANOVA implementations cannot deal with random factors (repeated measures) in complex factorial designs. In _R_, the _Manova_ function from the _car_ package appears to be capable of the necessary calculations, as does the commercial software package SPSS.
+The flowchart in Figure \@ref(fig:flowchart) contains a proposed decision structure for the analysis of periodic data, once any outliers have been removed. Initially, data for each condition should be tested against the expected distribution of eigenvalue ratios using the condition index test. Comparisons with one or two conditions should be tested with the $T^2_{circ}$ statistic if the eigenvalue ratios are consistent with circularity, and the $T^2$ statistic if not. Comparisons with more than two conditions should be tested with the $ANOVA^2_{circ}$ statistic if the eigenvalue ratios are consistent with circularity, or a MANOVA if not. Some MANOVA implementations cannot deal with random factors (repeated measures) in complex factorial designs. In _R_, the _Manova_ function from the _car_ package appears to be capable of the necessary calculations, as does the commercial statistics package _SPSS_.
 
 ```{r flowchart, fig.cap = 'Flowchart illustrating how one might decide which test to conduct for a given data set, based on the study design and the outcome of the condition index test.', fig.align="center", echo=FALSE}
 
@@ -777,17 +793,18 @@ textellipse(mid = pos[7,], radx = 0.1, rady = 0.1, lab = 'MANOVA', cex = 0.5, sh
 
 ```
 
-# Applying these methods to empirical data sets
+# Applying multivariate methods to empirical data sets
 
-Having developed some novel tools for the analysis of periodic data, in the following sections we demonstrate them using two different publicly available empirical data sets. The first study recorded responses to auditory and optogenetic stimulation in mice. The second study measured visual responses to flickering grating patterns in humans. These cases provide examples of how the results of the tests described above might be appropriately reported.
+Having developed some novel tools for the analysis of periodic data, in the following sections their use is demonstrated for two different publicly available empirical data sets. The first study recorded responses to auditory and optogenetic stimulation in mice. The second study measured visual responses to flickering grating patterns in humans. These examples also provide an illustration of how the results of the tests described above might be appropriately reported.
 
 ## Mouse auditory and optogenetic steady-state data
 
-Hwang et al. [-@Hwang2019; -@Hwang2020] measured steady-state responses using implanted scalp electrodes in 6 mice. The mice had previously been given a targeted virus that made parvalbumin neurons in their basal forebrain responsive to specific wavelengths of light, delivered through an optical fiber (a technique called optogenetics). SSVEPs were recorded from 36 electrodes for 1 second epochs of 40 Hz auditory stimulation, and various schedules of optogenetic stimulation (including at 40 Hz). The data set is described more fully by Hwang et al. [-@Hwang2020], and was downloaded from: [https://doi.gin.g-node.org/10.12751/g-node.e5tyek/](https://doi.gin.g-node.org/10.12751/g-node.e5tyek/). 
+Hwang et al. [-@Hwang2019; -@Hwang2020] measured steady-state responses using implanted scalp electrodes in 6 mice. The mice had previously been given a targeted virus that made parvalbumin neurons in their basal forebrain responsive to specific wavelengths of light, delivered through an optical fiber (a technique called optogenetics). SSVEPs were recorded from 36 electrodes for 1 second epochs of 40 Hz auditory stimulation, and various schedules of optogenetic stimulation (including at 40 Hz). The data set is described more fully by Hwang et al. [-@Hwang2020], and was downloaded from: [https://doi.gin.g-node.org/10.12751/g-node.e5tyek/](https://doi.gin.g-node.org/10.12751/g-node.e5tyek/). A processed data file is included with permission from the authors in the _FourierStats_ package.
 
-```{r mousedata, fig.cap = 'Summary of mouse steady-state responses to 40 Hz stimulation. Panel (a) shows the Fourier amplitude spectrum with inset scalp plots for sound (red) and light (blue) stimulation, averaged across repetitions and individuals. Panel (b) shows complex (x = real, y = imaginary) Fourier components for 6 individual mice (small points) and their average (large points) for both conditions.', fig.width=10, fig.height=6, fig.align="center", echo=FALSE}
+```{r mousedata, fig.cap = 'Summary of mouse steady-state responses to 40 Hz stimulation. Panel (a) shows the Fourier amplitude spectrum with inset scalp plots for sound (red) and light (blue) stimulation, averaged across repetitions and individuals. Grey and black points in the insets indicate electrode locations. Panel (b) shows complex (x = real, y = imaginary) Fourier components for 6 individual mice (small points) and their average (large points) for both conditions.', fig.width=10, fig.height=6, fig.align="center", echo=FALSE}
 
-load('misc/Hwangdata.RData')
+# example data are bundled with the package
+load(system.file("extdata", "Hwangdata.RData", package = "FourierStats"))
 
 frequencies <- 1:100
 f1 <- which(frequencies==40)
@@ -817,8 +834,8 @@ ramp <- colorRamp(c("white", rgb(187/255,40/255,107/255)))  # create a ramp from
 colmatrix2 <- rgb(ramp(seq(0, 1, length = 100)), max = 255)   # index the ramp at ten points
 
 datatoplot <- abs(meandata[,11,f1])
-testDat<- data.frame(x = montage[,2],
-                     y = -montage[,3],
+testDat<- data.frame(x = mousemontage[,2],
+                     y = -mousemontage[,3],
                      z = datatoplot)
 
 xo <- seq(min(-rmax, testDat$x), max(rmax, testDat$x), length = gridRes)
@@ -834,27 +851,27 @@ zo2[which(zo2>2)] <- 2
 image(2.4*xo+20,1.5+xo/14,zo2,zlim=c(0,2),col=colmatrix2,add=TRUE,useRaster=TRUE)
 
 rmax2 <- rmax+0.1
-maskx <- outline[which(outline[,1]>=0),1]
-masky <- outline[which(outline[,1]>=0),2]
+maskx <- mouseoutline[which(mouseoutline[,1]>=0),1]
+masky <- mouseoutline[which(mouseoutline[,1]>=0),2]
 polygon(2.4*c(0,maskx,0,rmax2,rmax2,0)+20,1.5+c(rmax2,masky,-rmax2,-rmax2,rmax2,rmax2)/14,border=NA,col="white")
-maskx <- outline[which(outline[,1]<=0),1]
-masky <- outline[which(outline[,1]<=0),2]
+maskx <- mouseoutline[which(mouseoutline[,1]<=0),1]
+masky <- mouseoutline[which(mouseoutline[,1]<=0),2]
 i <- sort(masky,index.return=TRUE)
 maskx <- maskx[i$ix]
 masky <- masky[i$ix]
 polygon(2.4*c(0,maskx,0,-rmax2,-rmax2,0)+20,1.5+c(-rmax2,masky,rmax2,rmax2,-rmax2,-rmax2)/14,border=NA,col="white")
 
-lines(2.4*outline[,1]+20,1.5+outline[,2]/14,lwd=2)
-points(2.4*montage[3:38,2]+20,1.5+montage[3:38,3]/14,pch=16,col='grey')
-points(2.4*montage[1:2,2]+20,1.5+montage[1:2,3]/14,pch=16)
+lines(2.4*mouseoutline[,1]+20,1.5+mouseoutline[,2]/14,lwd=2)
+points(2.4*mousemontage[3:38,2]+20,1.5+mousemontage[3:38,3]/14,pch=16,col='grey')
+points(2.4*mousemontage[1:2,2]+20,1.5+mousemontage[1:2,3]/14,pch=16)
 
 
 ramp <- colorRamp(c("white", rgb(56/255,111/255,164/255)))  # create a ramp from one colour to another
 colmatrix2 <- rgb(ramp(seq(0, 1, length = 100)), max = 255)   # index the ramp at ten points
 
 datatoplot <- abs(meandata[,12,f1])
-testDat<- data.frame(x = montage[,2],
-                     y = -montage[,3],
+testDat<- data.frame(x = mousemontage[,2],
+                     y = -mousemontage[,3],
                      z = datatoplot)
 
 xo <- seq(min(-rmax, testDat$x), max(rmax, testDat$x), length = gridRes)
@@ -870,19 +887,19 @@ zo2[which(zo2>2)] <- 2
 image(2.4*xo+60,1.5+xo/14,zo2,zlim=c(0,2),col=colmatrix2,add=TRUE,useRaster=TRUE)
 
 rmax2 <- rmax+0.1
-maskx <- outline[which(outline[,1]>=0),1]
-masky <- outline[which(outline[,1]>=0),2]
+maskx <- mouseoutline[which(mouseoutline[,1]>=0),1]
+masky <- mouseoutline[which(mouseoutline[,1]>=0),2]
 polygon(2.4*c(0,maskx,0,rmax2,rmax2,0)+60,1.5+c(rmax2,masky,-rmax2,-rmax2,rmax2,rmax2)/14,border=NA,col="white")
-maskx <- outline[which(outline[,1]<=0),1]
-masky <- outline[which(outline[,1]<=0),2]
+maskx <- mouseoutline[which(mouseoutline[,1]<=0),1]
+masky <- mouseoutline[which(mouseoutline[,1]<=0),2]
 i <- sort(masky,index.return=TRUE)
 maskx <- maskx[i$ix]
 masky <- masky[i$ix]
 polygon(2.4*c(0,maskx,0,-rmax2,-rmax2,0)+60,1.5+c(-rmax2,masky,rmax2,rmax2,-rmax2,-rmax2)/14,border=NA,col="white")
 
-lines(2.4*outline[,1]+60,1.5+outline[,2]/14,lwd=2)
-points(2.4*montage[3:38,2]+60,1.5+montage[3:38,3]/14,pch=16,col='grey')
-points(2.4*montage[1:2,2]+60,1.5+montage[1:2,3]/14,pch=16)
+lines(2.4*mouseoutline[,1]+60,1.5+mouseoutline[,2]/14,lwd=2)
+points(2.4*mousemontage[3:38,2]+60,1.5+mousemontage[3:38,3]/14,pch=16,col='grey')
+points(2.4*mousemontage[1:2,2]+60,1.5+mousemontage[1:2,3]/14,pch=16)
 
 lines(frequencies[1:79],meandata[1,11,1:79],col=nbdtpal[2],lwd=3)
 lines(frequencies[1:79],meandata[1,12,1:79],col=nbdtpal[3],lwd=3)
@@ -909,6 +926,8 @@ text(90,1.95,'(b)',cex=2,adj=0.5)
 
 text(149,0.94,'3',cex=1.5,adj=0.5)
 text(122,1.97,'3',cex=1.5,adj=0.5)
+text(95,1.1,'Real',cex=1.5,adj=0.5)
+text(117,0.28,'Imaginary',cex=1.5,adj=0.5,srt=90)
 
 totest <- data.frame(xdata,ydata)
 totest2 <- data.frame(xdata2,ydata2)
@@ -931,15 +950,14 @@ Figure \@ref(fig:mousedata)a shows Fourier amplitude spectra at two frontal elec
 
 ## Human visual steady-state data
 
-Vilidaite et al. [-@Vilidaite2018] measured visual responses to flickering grating stimuli in a large sample of 100 adults. Each participant completed a series of 11-second trials, in which stimuli of different contrasts flickered at 7Hz (on-off sinusoidal flicker). Responses were strongest at occipital electrodes over visual cortex (see upper row of Figure \@ref(fig:humanSSVEP)), were well-isolated in the Fourier domain, and increased with stimulus contrast. Significant activity was evident at 4% contrast and above following cluster correction (with very stringent alpha levels given the high power of this data set), as indicated by the red electrodes in the upper row of \@ref(fig:humanSSVEP). For the main analysis, we took responses from electrode _Oz_ at the occipital pole (black points in the upper row of Figure \@ref(fig:humanSSVEP)), averaged across repetition for each participant. Each condition included some outlier points with Mahalanobis distances exceeding 3, marked red in the lower row of Figure \@ref(fig:humanSSVEP). Any participant that contributed at least one outlier was excluded, leaving a total of 89 participants for the main analysis.
+Vilidaite et al. [-@Vilidaite2018] measured visual responses to flickering grating stimuli in a large sample of 100 adults. Each participant completed a series of 11-second trials, in which stimuli of different contrasts flickered at 7Hz (on-off sinusoidal flicker). Responses were strongest at occipital electrodes over visual cortex (see upper row of Figure \@ref(fig:humanSSVEP)), were well-isolated in the Fourier domain, and increased with stimulus contrast. Significant activity was evident at 4% contrast and above following cluster correction (with very stringent alpha levels given the high power of this data set), as indicated by the red electrodes in the upper row of \@ref(fig:humanSSVEP). For the main analysis, responses were taken from electrode _Oz_ at the occipital pole (black points in the upper row of Figure \@ref(fig:humanSSVEP)), averaged across repetition for each participant. Each condition included some outlier points with Mahalanobis distances exceeding 3, marked red in the lower row of Figure \@ref(fig:humanSSVEP). Any participant that contributed at least one outlier was excluded, leaving a total of 89 participants for the main analysis.
 
 ```{r humanSSVEP, fig.cap = 'Summary of human SSVEP data. Upper row shows scalp distributions of Fourier amplitudes at 7Hz for stimuli of increasing contrasts (blue shading indicates higher amplitudes). Electrodes marked in red indicate cluster-corrected significance.  Lower row shows scatterplots of complex (x = real, y = imaginary) Fourier components for 100 participants per condition, from electrode Oz (black point). Red points are outliers with Mahalanobis distances exceeding 3, and blue points mark the centroids.', fig.width=14, fig.height=5.4, fig.align="center", echo=FALSE}
 
-load("/Users/danbaker/Google Drive/Current work/Research/powercontours/headplotspec.RData")
+# example data are bundled with the package
+load(system.file("extdata", "humanSSVEPdata.RData", package = "FourierStats"))
 
-load('~/Google Drive/Current work/R scripts/danlabtoolbox/data/montagedata.RData')
-
-subjmeans <- apply(alltarget[,31,,],1:2,mean)
+subjmeans <- alltarget[,31,]
 
 nexcluded <- NULL
 isincluded <- 1 + 0*(1:100)
@@ -983,10 +1001,10 @@ plot(x=NULL,y=NULL,axes=FALSE,ann=FALSE, xlim=c(0,8), ylim=c(0,2))
 
 for (cond in 1:7){
   
-dataforcc <- apply(alltarget[which(isincluded==1),1:64,cond,],c(1,2),mean)
+dataforcc <- alltarget[which(isincluded==1),1:64,cond]
 clusts <- clustercorrect(dataforcc,adjacencymatrix=adjacencymatrix,testtype=3,clustformthresh=0.0001,clustthresh=0.01,nresamples=1000)
 
-datatoplot <- abs(apply(alltarget[which(isincluded==1),1:64,cond,], 2, mean))
+datatoplot <- abs(apply(alltarget[which(isincluded==1),1:64,cond], 2, mean))
 datatoplot[c(13,19)] <- mean(datatoplot)   # set the mastoids to 0
 testDat<- data.frame(x = montage$electrodelocs[montage$channelmappings,1],
                      y = -montage$electrodelocs[montage$channelmappings,2],
@@ -1005,13 +1023,13 @@ zo2[outsidecircle] <- 0
 
 image(cond+xo*0.8,1.5+xo*0.8,zo2,zlim=c(0,0.45),col=colmatrix2,add=TRUE,useRaster=TRUE)
 
-for (n in 1:64){points(cond+montage$electrodelocs[n,1]*0.8,1.5+montage$electrodelocs[n,2]*0.8,pch=16,col="grey",cex=0.8)}
+for (n in 1:64){points(cond+montage$electrodelocs[n,1]*0.8,1.5+montage$electrodelocs[n,2]*0.8,pch=16,col="grey",cex=0.5)}
 points(cond+montage$electrodelocs[blackelectrodes,1]*0.8,1.5+montage$electrodelocs[blackelectrodes,2]*0.8,pch=16,col="black",cex=1.5)
 
 if (clusts$nclusters>0){
 for (n in 1:clusts$nclusters){
   toplot <- clusts$clusterpoints[[n]]
-  points(cond+montage$electrodelocs[montage$channelmappings[toplot],1]*0.8,1.5+montage$electrodelocs[montage$channelmappings[toplot],2]*0.8,pch=16,col=nbdtpal[2],cex=0.8)}}
+  points(cond+montage$electrodelocs[montage$channelmappings[toplot],1]*0.8,1.5+montage$electrodelocs[montage$channelmappings[toplot],2]*0.8,pch=16,col=nbdtpal[2],cex=0.5)}}
 
 lines(cond+montage$headoutline[,1]*0.8,1.5+montage$headoutline[,2]*0.8,col="black",lwd=2)
 lines(cond+montage$noseoutline[,1]*0.8,1.5+montage$noseoutline[,2]*0.8,col="black",lwd=2)
@@ -1046,7 +1064,7 @@ for (cond in 1:7){
   ellRot <- getel(data.frame(xvals,yvals))
   lines(ellRot[1, ]+cond, ellRot[2, ]+0.5)
 
-  text(cond,1,paste(contrastlevels[cond],'%',sep=''),adj=0.5,cex=1.5)
+  text(cond,1.02,paste(contrastlevels[cond],'%',sep=''),adj=0.5,cex=1.5)
 totest <- data.frame(xvals,yvals)
 temp <- CI.test(totest)
 allCI[cond] <- temp$CI
@@ -1058,7 +1076,7 @@ grouplabels <- as.factor(rep(1:7,each=89))
 participant <- as.factor(rep(1:89,times=7))
 a <- reshape2::melt(cleandata[,1:7])
 simdata <- a[,3]
-withincirc <- anovacircR.test(data.frame(grouplabels,simdata,participant))
+withincirc <- anovacirc.test(data.frame(simdata,grouplabels,participant))
 
 allD <- NULL
 alltsq <- data.frame(matrix(0,nrow=6,ncol=6))
@@ -1079,7 +1097,7 @@ colnames(alltsq) <- colnames(tsqc.test(set1,set2,paired=TRUE))
 
 ```
 
-With the outlier points removed, all seven conditions resulted in non-significant condition index tests (largest CI = `r format(round(max(allCI),digits=2),nsmall=2)`, all _p_ > `r round(min(allCIp),digits=2)`). A repeated measures $ANOVA^2_{circ}$ test was conducted, revealing a significant effect of stimulus contrast ($F_{(`r withincirc$dfM`,`r withincirc$dfR`)}$ = `r round(withincirc$Fratio,digits=1)`, _p_ < `r max(round(withincirc$pvalue,digits=3),0.001)`). Pairwise $T^2_{circ}$ statistics comparing the baseline (0% contrast) condition to each subsequent condition (Bonferroni corrected for 6 tests to $\alpha = 0.08$) revealed significant differences at 8% contrast ($T^2_{circ}$ = `r format(round(alltsq$tsqc[3],digits=2),nsmall=2)`, $F_{(2,176)}$ = `r round(alltsq$Fratio[3],digits=2)`, D = `r round(allD[3],digits=2)`, _p_ < 0.001), 16% contrast ($T^2_{circ}$ = `r format(round(alltsq$tsqc[4],digits=2),nsmall=2)`, $F_{(2,176)}$ = `r round(alltsq$Fratio[4],digits=2)`, D = `r round(allD[4],digits=2)`, _p_ < 0.001), 32% contrast ($T^2_{circ}$ = `r format(round(alltsq$tsqc[5],digits=2),nsmall=2)`, $F_{(2,176)}$ = `r round(alltsq$Fratio[5],digits=2)`, D = `r round(allD[5],digits=2)`, _p_ < 0.001) and 64% contrast ($T^2_{circ}$ = `r format(round(alltsq$tsqc[6],digits=2),nsmall=2)`, $F_{(2,176)}$ = `r round(alltsq$Fratio[6],digits=2)`, D = `r round(allD[6],digits=2)`, _p_ < 0.001). The study by Vilidaite et al. [-@Vilidaite2018] compared SSVEP responses between individuals with and without autism, as well as in a _Drosophila_ genetic model of developmental disorders. The raw data are available at: [http://dx.doi.org/10.17605/OSF.IO/Y4N5K](http://dx.doi.org/10.17605/OSF.IO/Y4N5K).
+With the outlier points removed, all seven conditions resulted in non-significant condition index tests (largest CI = `r format(round(max(allCI),digits=2),nsmall=2)`, all _p_ > `r round(min(allCIp),digits=2)`). A repeated measures $ANOVA^2_{circ}$ test was conducted, revealing a significant effect of stimulus contrast ($F_{(`r withincirc$dfM`,`r withincirc$dfR`)}$ = `r round(withincirc$Fratio,digits=1)`, _p_ < `r max(round(withincirc$p.value,digits=3),0.001)`). Pairwise $T^2_{circ}$ statistics comparing the baseline (0% contrast) condition to each subsequent condition (Bonferroni corrected for 6 tests to $\alpha = 0.08$) revealed significant differences at 8% contrast ($T^2_{circ}$ = `r format(round(alltsq$tsqc[3],digits=2),nsmall=2)`, $F_{(2,176)}$ = `r round(alltsq$Fratio[3],digits=2)`, D = `r round(allD[3],digits=2)`, _p_ < 0.001), 16% contrast ($T^2_{circ}$ = `r format(round(alltsq$tsqc[4],digits=2),nsmall=2)`, $F_{(2,176)}$ = `r round(alltsq$Fratio[4],digits=2)`, D = `r round(allD[4],digits=2)`, _p_ < 0.001), 32% contrast ($T^2_{circ}$ = `r format(round(alltsq$tsqc[5],digits=2),nsmall=2)`, $F_{(2,176)}$ = `r round(alltsq$Fratio[5],digits=2)`, D = `r round(allD[5],digits=2)`, _p_ < 0.001) and 64% contrast ($T^2_{circ}$ = `r format(round(alltsq$tsqc[6],digits=2),nsmall=2)`, $F_{(2,176)}$ = `r round(alltsq$Fratio[6],digits=2)`, D = `r round(allD[6],digits=2)`, _p_ < 0.001). The study by Vilidaite et al. [-@Vilidaite2018] compared SSVEP responses between individuals with and without autism, as well as in a _Drosophila_ genetic model of developmental disorders. The raw data are available at: [http://dx.doi.org/10.17605/OSF.IO/Y4N5K](http://dx.doi.org/10.17605/OSF.IO/Y4N5K), and a processed version is included with the _FourierStats_ package.
 
 # Further considerations
 
@@ -1087,12 +1105,12 @@ It is worth pointing out that the statistical tests discussed in this paper are 
 
 The present paper has focussed on the Frequentist statistical tradition. However there are many advantages to the Bayesian approach, in which one can make direct quantitative comparisons of the evidence supporting both the experimental and null hypotheses [@Jeffreys1961]. Subject to determining appropriate priors, Bayes factor scores might be calculated for all of the statistics considered here, much as has been done previously for univariate T-tests [@Rouder2009] and ANOVA [@Rouder2017]. However this is a non-trivial undertaking, and is beyond the scope of the current paper.
 
-Another possibility is to use machine learning techniques such as multivariate pattern analysis (MVPA) to analyse periodic data. This involvess training a classifier algorithm to distinguish between two (or more) experimental conditions or states, and then assessing classifier accuracy on fresh data. If different conditions produce distinct patterns of neural response, then classifier accuracy will be above chance. Such methods have been hugely influential in the fMRI literature [@Schwarzkopf2011], and for analysing event-related potential data collected using EEG or MEG [@Grootswagers2017]. However, they have not been widely applied to steady-state data (though see West et al. [-@West2015] for an example). In principle, the real and imaginary Fourier components can be treated as separate dependent variables, along with different recording locations and/or frequencies. This approach has the potential to offer sensitive, high-powered statistical tests that circumvent many of the shortcomings associated with traditional statistics.
+Another possibility is to use machine learning techniques such as multivariate pattern analysis (MVPA) to analyse periodic data. This involvess training a classifier algorithm to distinguish between two (or more) experimental conditions or states, and then assessing classifier accuracy on fresh data. If different conditions produce distinct patterns of neural response, then classifier accuracy will be above chance. Such methods have been hugely influential in the fMRI literature [@Schwarzkopf2011], and for analysing event-related potential data collected using EEG or MEG [@Grootswagers2017]. However, they have not been widely applied to steady-state data (though see West et al. [-@West2015] for one example). In principle, the real and imaginary Fourier components can be treated as separate dependent variables, along with different recording locations and/or frequencies. This approach has the potential to offer sensitive, high-powered statistical tests that circumvent many of the shortcomings associated with traditional statistics.
 
-Even when statistics are conducted using both the real and imaginary Fourier components, it is still typical to visualise the mean amplitudes. Several approaches to calculating appropriate error bars have been proposed. For example, Pei et al. [-@Pei2017] suggest calculating the nearest and farthest points from the origin on the bounding ellipse, and using these to derive standard errors for the amplitude. This approach is somewhat demanding, though we have implemented an _R_ function to calculate error bars using this method (available through the _amperrors_ function). However, we feel that bootstrap resampling offers a powerful and general alternative for calculating 95% confidence intervals on amplitudes. This is achieved by resampling the complex data (with replacement) and calculating a resampled complex mean. The amplitude is then derived for this resampled mean, and the procedure repeated a large number of times (1000 or 10000 repetitions is typical) to build up a population of resampled amplitudes. Upper and lower 95% confidence intervals on the amplitude can then be taken at appropriate quantiles of this population. 
+Even when statistics are conducted using both the real and imaginary Fourier components, it is still typical to visualise the mean amplitudes. Several approaches to calculating appropriate error bars have been proposed. For example, Pei et al. [-@Pei2017] suggest calculating the nearest and farthest points from the origin on the bounding ellipse, and using these to derive standard errors for the amplitude. This approach is somewhat demanding, though an _R_ function is provided to calculate error bars using this method (available through the _amperrors_ function). However, as an alternative, bootstrap resampling offers a powerful and general method for calculating confidence intervals on amplitudes. This is achieved by resampling the complex data (with replacement) and calculating a resampled complex mean. The amplitude is then derived for this resampled mean, and the procedure repeated a large number of times (1000 or 10000 repetitions is typical) to build up a population of resampled mean amplitudes. Upper and lower confidence intervals on the amplitude can then be taken at appropriate quantiles of this population (68% and 95% are typical, with the 68% interval corresponding to the standard error).
 
 # General recommendations for analysing periodic data
 
-The simulations reported here allow us to make several recommendations for how periodic data should be analysed. Multivariate statistics should be used for phase-locked Fourier data instead of univariate statistics such as T-tests and ANOVA. This avoids problems from distributions of amplitudes violating the test assumptions, and also provides a sensitivity benefit from the inclusion of phase information. Outliers should be removed when they have a Mahalanobis distance exceeding 3, and the pairwise Mahanalobis distance reported as a measure of effect size. For sample sizes of N < 32, the $T^2_{circ}$ and $ANOVA^2_{circ}$ statistics can be used if the condition index test is non-significant for all conditions. Alternatively, the $T^2$ or MANOVA statistics should be used when these conditions are not met. The greater power afforded by these tests should in general lead to more accurate statistical inferences when analysing periodic data.
+The simulations reported here allow several recommendations to be made for how periodic data should be analysed. Multivariate statistics should be used for phase-locked Fourier data instead of univariate statistics such as T-tests and ANOVA. This avoids problems from non-normal distributions of amplitudes violating the test assumptions, and also provides a sensitivity benefit from the inclusion of phase information. Outliers should be removed when they have a Mahalanobis distance exceeding 3, and the pairwise Mahalanobis distance reported as a measure of effect size. For sample sizes of N < 32, the $T^2_{circ}$ and $ANOVA^2_{circ}$ statistics can be used if the condition index test is non-significant for all conditions. Alternatively, the $T^2$ or MANOVA statistics should be used when these conditions are not met. The greater power afforded by these tests should in general lead to more accurate statistical inferences when analysing periodic data.
 
 # References
