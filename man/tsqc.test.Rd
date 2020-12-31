@@ -2,14 +2,18 @@
 % Please edit documentation in R/tsqc.test.R
 \name{tsqc.test}
 \alias{tsqc.test}
-\title{function to calculate the t-squared circ statistic from Victor & Mast (1991)
+\title{tsqc.test: function to calculate the T-squared circ statistic from Victor & Mast (1991)
 the inputs must be Nx2 or 2xN matrices of numbers
-for a one-sample test, mu is an optional vector to which the data are compared}
+for a one-sample test, mu is an optional vector to which the data are compared
+for a two-sample test, x and y are the data from the two conditions
+if paired=TRUE, the matrices (x and y) must be the same size}
 \usage{
 tsqc.test(x, y = NULL, paired = FALSE, mu = NULL)
 }
 \description{
-function to calculate the t-squared circ statistic from Victor & Mast (1991)
+tsqc.test: function to calculate the T-squared circ statistic from Victor & Mast (1991)
 the inputs must be Nx2 or 2xN matrices of numbers
 for a one-sample test, mu is an optional vector to which the data are compared
+for a two-sample test, x and y are the data from the two conditions
+if paired=TRUE, the matrices (x and y) must be the same size
 }

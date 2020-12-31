@@ -1,6 +1,8 @@
-#' function to calculate the t-squared circ statistic from Victor & Mast (1991)
+#' tsqc.test: function to calculate the T-squared circ statistic from Victor & Mast (1991)
 #' the inputs must be Nx2 or 2xN matrices of numbers
 #' for a one-sample test, mu is an optional vector to which the data are compared
+#' for a two-sample test, x and y are the data from the two conditions
+#' if paired=TRUE, the matrices (x and y) must be the same size
 #' @export
 tsqc.test <- function(x,y=NULL,paired=FALSE,mu=NULL){
 
@@ -13,8 +15,8 @@ tsqc.test <- function(x,y=NULL,paired=FALSE,mu=NULL){
   if (!is.null(mu)){for (n in 1:length(mu)){x[,n] <- x[,n] - mu[n]}}
 
   # convert data to complex representation
-  x <- complex(real=x[,1],imaginary=x[,2])
-  if (!is.null(y)){y <- complex(real=y[,1],imaginary=y[,2])}
+  if (!is.complex(x)){x <- complex(real=x[,1],imaginary=x[,2])}
+  if (!is.null(y)){if (!is.complex(y)){y <- complex(real=y[,1],imaginary=y[,2])}}
 
   if (is.null(y)){method <- 'One-sample t-squared circ test'}
   if (!is.null(y) & paired==TRUE){method <- 'Paired t-squared circ test'}

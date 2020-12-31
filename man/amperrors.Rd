@@ -2,10 +2,32 @@
 % Please edit documentation in R/amperrors.R
 \name{amperrors}
 \alias{amperrors}
-\title{placeholder for errorbar function amperrors}
+\title{amperrors: calculate error bars on the amplitude component of coherently averaged data
+the input is a vector of complex numbers, or an Nx2 matrix of real and imaginary components
+the optional 'method' flag allows the following values:
+\itemize{
+\item 'boot': (default) bootstraps the confidence intervals (10000 iterations)
+\item 'circ': calculates confidence intervals based on a circular bounding region (used when the condition index test is non-significant)
+\item 'ellipse': calculates confidence intervals based on an elliptical bounding region (based on Pei et al. 2017, doi: 10.1016/j.visres.2016.03.010)
+\item 'abs': calculates the standard error (and the mean) using the absolute amplitudes
+the optional 'quantiles' flag allows the quantile to be set for the confidence intervals
+typical values are 95 (for 95\% confidence intervals), and 68 (for standard errors)
+the function returns the mean amplitude and the upper and lower error bars
+}}
 \usage{
-amperrors(input)
+amperrors(input, method = "boot", quantiles = 95)
 }
 \description{
-placeholder for errorbar function amperrors
+amperrors: calculate error bars on the amplitude component of coherently averaged data
+the input is a vector of complex numbers, or an Nx2 matrix of real and imaginary components
+the optional 'method' flag allows the following values:
+\itemize{
+\item 'boot': (default) bootstraps the confidence intervals (10000 iterations)
+\item 'circ': calculates confidence intervals based on a circular bounding region (used when the condition index test is non-significant)
+\item 'ellipse': calculates confidence intervals based on an elliptical bounding region (based on Pei et al. 2017, doi: 10.1016/j.visres.2016.03.010)
+\item 'abs': calculates the standard error (and the mean) using the absolute amplitudes
+the optional 'quantiles' flag allows the quantile to be set for the confidence intervals
+typical values are 95 (for 95\% confidence intervals), and 68 (for standard errors)
+the function returns the mean amplitude and the upper and lower error bars
+}
 }

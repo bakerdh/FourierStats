@@ -2,12 +2,18 @@
 % Please edit documentation in R/CI.test.R
 \name{CI.test}
 \alias{CI.test}
-\title{function to calculate the condition index of bivariate data
-compare for significance with an expected distribution function}
+\title{CI.test: function to calculate the condition index of bivariate data
+the condition index is the ratio of eigenvalues (eigenvector lengths), calculated longest/shortest
+the index is then compared for significance with an expected distribution function
+significant tests (p<0.05) violate the assumptions of the T-squared-circ and ANOVA-squared-circ tests
+see Baker (2021) for further details}
 \usage{
 CI.test(data)
 }
 \description{
-function to calculate the condition index of bivariate data
-compare for significance with an expected distribution function
+CI.test: function to calculate the condition index of bivariate data
+the condition index is the ratio of eigenvalues (eigenvector lengths), calculated longest/shortest
+the index is then compared for significance with an expected distribution function
+significant tests (p<0.05) violate the assumptions of the T-squared-circ and ANOVA-squared-circ tests
+see Baker (2021) for further details
 }

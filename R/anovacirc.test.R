@@ -1,5 +1,10 @@
-#' analysis of variance using complex data
+#' anovacirc.test: two-dimensional analysis of variance using complex data
 #' an extension of the logic of the t-squared circ statistic
+#' this is the one-way, between subjects implementation of the test
+#' the expected input is a long-format data frame with the following columns:
+#' simdata: the data stored as complex values
+#' grouplabels: condition labels indicating the level of the independent variable each data point corresponds to
+#' see Baker (2021) for further details
 #' @export
 anovacirc.test <- function(data){
 

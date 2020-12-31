@@ -2,12 +2,14 @@
 % Please edit documentation in R/getel.R
 \name{getel}
 \alias{getel}
-\title{helper function that calculates an ellipse bounding some data points
-the outline of the ellipse is returned}
+\title{getel: helper function that calculates an ellipse bounding some data points
+the outline of the ellipse is returned, sampled at 200 points
+the input should be an Nx2 matrix of observations}
 \usage{
 getel(compdata)
 }
 \description{
-helper function that calculates an ellipse bounding some data points
-the outline of the ellipse is returned
+getel: helper function that calculates an ellipse bounding some data points
+the outline of the ellipse is returned, sampled at 200 points
+the input should be an Nx2 matrix of observations
 }

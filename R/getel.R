@@ -1,5 +1,6 @@
-#' helper function that calculates an ellipse bounding some data points
-#' the outline of the ellipse is returned
+#' getel: helper function that calculates an ellipse bounding some data points
+#' the outline of the ellipse is returned, sampled at 200 points
+#' the input should be an Nx2 matrix of observations
 #' @export
 getel <- function(compdata){
   A <- cov(compdata)
@@ -15,5 +16,7 @@ getel <- function(compdata){
   yMat    <- rbind(ctr[2] + eigScl[2, ], ctr[2] - eigScl[2, ])
   ellBase <- cbind(sqrt(eigVal[1])*cos(angles), sqrt(eigVal[2])*sin(angles))
   ellRot  <- eigVec %*% t(ellBase)
+  ellRot[1,] <- ellRot[1,] + ctr[1]
+  ellRot[2,] <- ellRot[2,] + ctr[2]
   return(ellRot)
 }

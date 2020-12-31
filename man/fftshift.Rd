@@ -2,10 +2,14 @@
 % Please edit documentation in R/fftshift.R
 \name{fftshift}
 \alias{fftshift}
-\title{one line helper function to do quadrant flip}
+\title{one line helper function to do quadrant flip for 2D Fourier transforms
+shifts the low spatial frequencies to the centre of the spectrum
+this is included in most programming languages, but is absent from the base R Fourier transform tools}
 \usage{
 fftshift(im)
 }
 \description{
-one line helper function to do quadrant flip
+one line helper function to do quadrant flip for 2D Fourier transforms
+shifts the low spatial frequencies to the centre of the spectrum
+this is included in most programming languages, but is absent from the base R Fourier transform tools
 }

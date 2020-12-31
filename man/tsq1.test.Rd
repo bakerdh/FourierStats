@@ -2,12 +2,18 @@
 % Please edit documentation in R/tsq1.test.R
 \name{tsq1.test}
 \alias{tsq1.test}
-\title{function to calculate a one-sample t-squared test after Hotelling (1931)
-for two-sample tests, use the Hotelling package}
+\title{tsq1.test: function to calculate a one-sample T-squared test of Hotelling (1931)
+the input is an N (observations) by m (dependent variables) matrix
+optional input mu is a vector with m entries, to which the data are compared (otherwise compared to 0)
+a repeated measures version can be calculated by subtracting the two conditions and then running the one-sample test
+for two-sample tests, use the hotelling.test function from the Hotelling package}
 \usage{
 tsq1.test(data, mu = NULL)
 }
 \description{
-function to calculate a one-sample t-squared test after Hotelling (1931)
-for two-sample tests, use the Hotelling package
+tsq1.test: function to calculate a one-sample T-squared test of Hotelling (1931)
+the input is an N (observations) by m (dependent variables) matrix
+optional input mu is a vector with m entries, to which the data are compared (otherwise compared to 0)
+a repeated measures version can be calculated by subtracting the two conditions and then running the one-sample test
+for two-sample tests, use the hotelling.test function from the Hotelling package
 }

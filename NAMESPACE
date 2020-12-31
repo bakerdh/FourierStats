@@ -2,8 +2,10 @@
 
 export(CI.test)
 export(amperrors)
+export(analysecplx)
 export(anovacirc.test)
 export(anovacircR.test)
+export(clustercorrect)
 export(fftshift)
 export(getel)
 export(tsq1.test)
