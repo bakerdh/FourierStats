@@ -4,12 +4,12 @@
 \alias{getel}
 \title{getel: helper function that calculates an ellipse bounding some data points
 the outline of the ellipse is returned, sampled at 200 points
-the input should be an Nx2 matrix of observations}
+the input should be an Nx2 matrix of observations or an N-length vector of complex values}
 \usage{
 getel(compdata)
 }
 \description{
 getel: helper function that calculates an ellipse bounding some data points
 the outline of the ellipse is returned, sampled at 200 points
-the input should be an Nx2 matrix of observations
+the input should be an Nx2 matrix of observations or an N-length vector of complex values
 }

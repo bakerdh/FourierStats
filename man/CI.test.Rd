@@ -3,17 +3,23 @@
 \name{CI.test}
 \alias{CI.test}
 \title{CI.test: function to calculate the condition index of bivariate data
-the condition index is the ratio of eigenvalues (eigenvector lengths), calculated longest/shortest
+Inputs:
+data is an N x 2 matrix of bivariate (x,y) observations, or a vector of N complex values
+alpha is the criterion for statistical significance, set to a default of 0.05
+the condition index is square root of the the ratio of eigenvalues (eigenvector lengths), calculated longest/shortest
 the index is then compared for significance with an expected distribution function
-significant tests (p<0.05) violate the assumptions of the T-squared-circ and ANOVA-squared-circ tests
+significant tests (p < alpha) violate the assumptions of the T-squared-circ and ANOVA-squared-circ tests
 see Baker (2021) for further details}
 \usage{
-CI.test(data)
+CI.test(data, alpha = 0.05)
 }
 \description{
 CI.test: function to calculate the condition index of bivariate data
-the condition index is the ratio of eigenvalues (eigenvector lengths), calculated longest/shortest
+Inputs:
+data is an N x 2 matrix of bivariate (x,y) observations, or a vector of N complex values
+alpha is the criterion for statistical significance, set to a default of 0.05
+the condition index is square root of the the ratio of eigenvalues (eigenvector lengths), calculated longest/shortest
 the index is then compared for significance with an expected distribution function
-significant tests (p<0.05) violate the assumptions of the T-squared-circ and ANOVA-squared-circ tests
+significant tests (p < alpha) violate the assumptions of the T-squared-circ and ANOVA-squared-circ tests
 see Baker (2021) for further details
 }

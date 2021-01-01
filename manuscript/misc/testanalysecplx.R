@@ -7,11 +7,13 @@ xy <- complex(real=x,imaginary=y)
 group <- rep(1:2,each=N)
 participant <- rep(1:N,times=2)
 
-input <- data.frame(xy,group)
-analysecplx(input)
+data <- data.frame(xy,group)
+group=NULL
+participant=NULL
+results <- analysecplx(data)
 
-input <- data.frame(xy,group,participant)
-analysecplx(input)
+data <- data.frame(xy,group,participant)
+analysecplx(data)
 
 
 x <- rnorm(2*N)
@@ -36,7 +38,7 @@ xy <- complex(real=x,imaginary=y)
 group <- rep(1:3,each=N)
 participant <- rep(1:N,times=3)
 
-input <- data.frame(xy,group)
+data <- data.frame(xy,group)
 analysecplx(input)
 
 input <- data.frame(xy,group,participant)

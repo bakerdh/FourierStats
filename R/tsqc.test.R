@@ -7,9 +7,9 @@
 tsqc.test <- function(x,y=NULL,paired=FALSE,mu=NULL){
 
   # transpose if dimensions are the wrong way round
-  if (is.matrix(x)){d <- dim(x)
+  if (!is.null(ncol(x))){d <- dim(x)
   if (d[1]<d[2]){x <- t(x)}}
-  if (!is.null(y)){if (is.matrix(y)){d <- dim(y)
+  if (!is.null(y)){if (!is.null(ncol(y))){d <- dim(y)
   if (d[1]<d[2]){y <- t(y)}}}
 
   if (!is.null(mu)){for (n in 1:length(mu)){x[,n] <- x[,n] - mu[n]}}

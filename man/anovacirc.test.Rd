@@ -3,21 +3,21 @@
 \name{anovacirc.test}
 \alias{anovacirc.test}
 \title{anovacirc.test: two-dimensional analysis of variance using complex data
-an extension of the logic of the t-squared circ statistic
-this is the one-way, between subjects implementation of the test
-the expected input is a long-format data frame with the following columns:
-simdata: the data stored as complex values
-grouplabels: condition labels indicating the level of the independent variable each data point corresponds to
-see Baker (2021) for further details}
+an extension of the logic of the T-squared circ statistic of Victor & Mast (1991)
+this is a one-way implementation of the test - if participant IDs are supplied a repeated measures version is conducted}
 \usage{
-anovacirc.test(data)
+anovacirc.test(data, group = NULL, participant = NULL)
 }
 \description{
-anovacirc.test: two-dimensional analysis of variance using complex data
-an extension of the logic of the t-squared circ statistic
-this is the one-way, between subjects implementation of the test
-the expected input is a long-format data frame with the following columns:
-simdata: the data stored as complex values
-grouplabels: condition labels indicating the level of the independent variable each data point corresponds to
+Inputs--
+data:  this can either be a vector of complex numbers, or a matrix
+if it is a matrix, either the first column contains complex values, or the first two columns are the x and y (real and imaginary) values of the DV
+if there are further columns, these are treated as the group labels and participant IDs
+group: condition labels indicating the level of the independent variable that each data point corresponds to
+this is an optional input, but if it is supplied it supercedes values from the matrix
+participant: variable storing participant/subject IDs (i.e. the random factor) for repeated measures analysis
+this is an optional input, but if it is supplied it supercedes values from the matrix
+}
+\details{
 see Baker (2021) for further details
 }

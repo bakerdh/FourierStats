@@ -15,9 +15,12 @@
 #' @export
 anovacirc.test <- function(data, group=NULL, participant=NULL){
 
-  if (!is.matrix(data)){datavals <- data}
+  # if the input data is a vector, it must be complex Fourier components
+  if (is.null(ncol(data))){datavals <- data}
 
-  if (is.matrix(data)){d <- dim(data)
+  # if the input is not a vector, then work out what it contains based on its dimensions
+  if (!is.null(ncol(data))){d <- dim(data)
+
   if (is.complex(data[,1])){datavals <- data[,1]
   if (d[2]>1){grouplabels <- data[,2]}
   if (d[2]>2){participantlabels <- data[,3]}}
@@ -54,17 +57,9 @@ anovacirc.test <- function(data, group=NULL, participant=NULL){
   MSM <- SSM/dfM
   MSR <- SSR/dfR
   Fratio <- MSM/MSR
-  pvalue <- pf(Fratio,df1=dfM,df2=dfR,lower.tail=FALSE)
+  p.value <- pf(Fratio,df1=dfM,df2=dfR,lower.tail=FALSE)
 
-  output <- NULL
-  output$Fratio <- Fratio
-  output$p.value <- pvalue
-  output$SSM <- SSM
-  output$SSR <- SSR
-  output$dfM <- dfM
-  output$dfR <- dfR
-  output$MSM <- MSM
-  output$MSR <- MSR
+  output <- data.frame(Fratio,p.value,SSM,SSR,dfM,dfR,MSM,MSR)
 }
 
   # if participant labels have been supplied, run a repeated measures ANOVA-circ
@@ -88,19 +83,9 @@ anovacirc.test <- function(data, group=NULL, participant=NULL){
   MSM <- SSM/dfM
   MSR <- SSR/dfR
   Fratio <- MSM/MSR
-  pvalue <- pf(Fratio,df1=dfM,df2=dfR,lower.tail=FALSE)
+  p.value <- pf(Fratio,df1=dfM,df2=dfR,lower.tail=FALSE)
 
-  output <- NULL
-  output$Fratio <- Fratio
-  output$p.value <- pvalue
-  output$SSW <- SSW
-  output$SSM <- SSM
-  output$SSR <- SSR
-  output$dfW <- dfW
-  output$dfM <- dfM
-  output$dfR <- dfR
-  output$MSM <- MSM
-  output$MSR <- MSR
+  output <- data.frame(Fratio,p.value,SSW,SSM,SSR,dfW,dfM,dfR,MSM,MSR)
   }
 
   return(output)

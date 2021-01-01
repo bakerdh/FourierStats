@@ -2,17 +2,24 @@
 % Please edit documentation in R/analysecplx.R
 \name{analysecplx}
 \alias{analysecplx}
-\title{analysecplx: wrapper function that decides which statistical test to run for a given data set
-the expected input is a data frame in long format:
-one column should contain complex valued data, or two columns headed x and y contain the real and imaginary parts
-if a column is headed 'group' (or any word beginning with a g) is included, this will be interpreted as level data for the independent variable
-if a column is headed 'participant' (or any word beginning with a p) is included, this will be interpreted as a random factor}
+\title{analysecplx: wrapper function that automatically decides which statistical test to run for a given data set}
 \usage{
-analysecplx(input)
+analysecplx(data, group = NULL, participant = NULL)
 }
 \description{
+Inputs--
+data:  this can either be a vector of complex numbers, or a matrix
+if it is a matrix, either the first column contains complex values, or the first two columns are the x and y (real and imaginary) values of the DV
+if there are further columns, these are treated as the group labels and participant IDs
+group: condition labels indicating the level of the independent variable that each data point corresponds to
+this is an optional input, but if it is supplied it supercedes values from the matrix
+participant: variable storing participant/subject IDs (i.e. the random factor) for repeated measures analysis
+this is an optional input, but if it is supplied it supercedes values from the matrix
+}
+\details{
 the function first runs the condition index test for each level of the IV
 if the condition index test is non-significant for all levels, a T-squared-circ test is run for one- and two-sample designs, or an ANOVA-squared-circ test otherwise
-if the condition index test is significant for any level, a T-squared or MANOVA test is run instead
-the paired-samples Mahalanobis effect size statistic is also calculated
+if the condition index test is significant for any level, a T-squared test or MANOVA is run instead
+if participant labels are included, a repeated measures test is conducted
+the Mahalanobis distance effect size statistic (D) is also calculated
 }

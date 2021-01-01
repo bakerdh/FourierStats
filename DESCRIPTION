@@ -16,7 +16,7 @@ Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.1.0
 Imports:
   stats,
-  car,
+  MANOVA.RM,
   HDMD,
   Hotelling,
   pracma
