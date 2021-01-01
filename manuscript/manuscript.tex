@@ -69,7 +69,7 @@
 
 \title{Statistical analysis of periodic data in neuroscience}
 \author{Daniel H. Baker}
-\date{2020-12-31}
+\date{2021-01-01}
 
 \begin{document}
 \maketitle
@@ -205,7 +205,7 @@ The effectiveness of this approach to outlier exclusion can be assessed by simul
 \caption{Simulations illustrating the Mahalanobis distance metric, and showing how a single outlier affects the condition index. The upper row shows three example data sets, each with a single outlier shown in red. The outliers have approximate Mahalanobis distances of 1, 3 and 5. The ellipses are calculated with the outlier included (red) and excluded (black), illustrating how the outlier distorts the aspect ratio of the ellipse. The lower plot shows how the proportion of significant condition index tests depends on the outlier distance and the sample size.}\label{fig:outlierplot}
 \end{figure}
 
-A variant of the Mahalanobis distance (the pairwise Mahalanobis distance) can also be used to compute a multivariate measure of effect size, equivalent to Cohen's \emph{d} statistic (see e.g. Del Giudice, 2009). This is a valuable statistic to include when reporting the results of multivariate tests, and an \emph{R} function (\emph{pairwise.mahalanobis}) to calculate it is available as part of the \emph{HDMD} package \url{https://CRAN.R-project.org/package=HDMD}.
+A variant of the Mahalanobis distance (the pairwise Mahalanobis distance) can also be used to compute a multivariate measure of effect size, equivalent to Cohen's \emph{d} statistic (see e.g. Del Giudice, 2009). This is a valuable statistic to include when reporting the results of multivariate tests, and an \emph{R} function (\emph{pairwise.mahalanobis}) to calculate it is available as part of the \href{https://CRAN.R-project.org/package=HDMD}{\emph{HDMD}} package.
 
 \hypertarget{controlling-for-multiple-comparisons-across-location-and-time}{%
 \section{Controlling for multiple comparisons across location and time}\label{controlling-for-multiple-comparisons-across-location-and-time}}
@@ -230,12 +230,12 @@ A suitable name for such a test might be \({ANOVA}^2_{circ}\), as this reflects 
 \caption{Simulations comparing the sensitivity of MANOVA and ANOVA2circ. The format mirrors that of Figure 2. In these simulations, there were three conditions, with the signal being added to one condition only.}\label{fig:powerfig2}
 \end{figure}
 
-Following \({ANOVA}^2_{circ}\), one could calculate \(T^2_{circ}\) statistics to make post-hoc pairwise comparisons between conditions, providing that appropriate multiple comparison correction is applied (e.g.~Bonferroni correction). Univariate ANOVAs on the real and imaginary components are unlikely to be informative, as the relative magnitudes depend on stimulus phase (which is arbitrary). A repeated measures version of \({ANOVA}^2_{circ}\) has also been implemented following the same logic. The project repository contains \emph{R} functions for both of these tests (\emph{anovacirc.test} and \emph{anovacircR.test}).
+Following \({ANOVA}^2_{circ}\), one could calculate \(T^2_{circ}\) statistics to make post-hoc pairwise comparisons between conditions, providing that appropriate multiple comparison correction is applied (e.g.~Bonferroni correction). Univariate ANOVAs on the real and imaginary components are unlikely to be informative, as the relative magnitudes depend on stimulus phase (which is arbitrary). A repeated measures version of \({ANOVA}^2_{circ}\) has also been implemented following the same logic. The project repository contains an \emph{R} function (\emph{anovacirc.test}) to run both of these tests.
 
 \hypertarget{deciding-which-test-to-run}{%
 \section{Deciding which test to run}\label{deciding-which-test-to-run}}
 
-The flowchart in Figure \ref{fig:flowchart} contains a proposed decision structure for the analysis of periodic data, once any outliers have been removed. Initially, data for each condition should be tested against the expected distribution of eigenvalue ratios using the condition index test. Comparisons with one or two conditions should be tested with the \(T^2_{circ}\) statistic if the eigenvalue ratios are consistent with circularity, and the \(T^2\) statistic if not. Comparisons with more than two conditions should be tested with the \(ANOVA^2_{circ}\) statistic if the eigenvalue ratios are consistent with circularity, or a MANOVA if not. Some MANOVA implementations cannot deal with random factors (repeated measures) in complex factorial designs. In \emph{R}, the \emph{Manova} function from the \emph{car} package appears to be capable of the necessary calculations, as does the commercial statistics package \emph{SPSS}.
+The flowchart in Figure \ref{fig:flowchart} contains a proposed decision structure for the analysis of periodic data, once any outliers have been removed. Initially, data for each condition should be tested against the expected distribution of eigenvalue ratios using the condition index test. Comparisons with one or two conditions should be tested with the \(T^2_{circ}\) statistic if the eigenvalue ratios are consistent with circularity, and the \(T^2\) statistic if not. Comparisons with more than two conditions should be tested with the \(ANOVA^2_{circ}\) statistic if the eigenvalue ratios are consistent with circularity, or a MANOVA if not. Many MANOVA implementations cannot deal correctly with random factors (repeated measures) in complex factorial designs. However the \emph{multRM} function in the {[}\emph{MANOVA.RM}{]}\{\url{https://CRAN.R-project.org/package=MANOVA.RM}\} package (Friedrich et al., 2019) is able to handle such designs appropriately using a bootstrapping approach.
 
 \begin{figure}
 
@@ -281,7 +281,7 @@ Vilidaite et al. (2018) measured visual responses to flickering grating stimuli 
 \caption{Summary of human SSVEP data. Upper row shows scalp distributions of Fourier amplitudes at 7Hz for stimuli of increasing contrasts (blue shading indicates higher amplitudes). Electrodes marked in red indicate cluster-corrected significance.  Lower row shows scatterplots of complex (x = real, y = imaginary) Fourier components for 100 participants per condition, from electrode Oz (black point). Red points are outliers with Mahalanobis distances exceeding 3, and blue points mark the centroids.}\label{fig:humanSSVEP}
 \end{figure}
 
-With the outlier points removed, all seven conditions resulted in non-significant condition index tests (largest CI = 1.20, all \emph{p} \textgreater{} 0.19). A repeated measures \(ANOVA^2_{circ}\) test was conducted, revealing a significant effect of stimulus contrast (\(F_{(12,1056)}\) = 38.9, \emph{p} \textless{} 0.001). Pairwise \(T^2_{circ}\) statistics comparing the baseline (0\% contrast) condition to each subsequent condition (Bonferroni corrected for 6 tests to \(\alpha = 0.08\)) revealed significant differences at 8\% contrast (\(T^2_{circ}\) = 0.32, \(F_{(2,176)}\) = 28.43, D = 0.13, \emph{p} \textless{} 0.001), 16\% contrast (\(T^2_{circ}\) = 0.28, \(F_{(2,176)}\) = 25.25, D = 0.19, \emph{p} \textless{} 0.001), 32\% contrast (\(T^2_{circ}\) = 0.10, \(F_{(2,176)}\) = 8.55, D = 0.14, \emph{p} \textless{} 0.001) and 64\% contrast (\(T^2_{circ}\) = 0.40, \(F_{(2,176)}\) = 35.35, D = 0.33, \emph{p} \textless{} 0.001). The study by Vilidaite et al. (2018) compared SSVEP responses between individuals with and without autism, as well as in a \emph{Drosophila} genetic model of developmental disorders. The raw data are available at: \url{http://dx.doi.org/10.17605/OSF.IO/Y4N5K}, and a processed version is included with the \emph{FourierStats} package.
+With the outlier points removed, all seven conditions resulted in non-significant condition index tests (largest CI = 1.20, all \emph{p} \textgreater{} 0.19). A repeated measures \(ANOVA^2_{circ}\) test was conducted, revealing a significant effect of stimulus contrast (\(F_{(12,1056)}\) = 38.9, \emph{p} \textless{} 0.001). Pairwise \(T^2_{circ}\) statistics comparing the baseline (0\% contrast) condition to each subsequent condition (Bonferroni corrected for 6 tests to \(\alpha = 0.08\)) revealed significant differences at 8\% contrast (\(T^2_{circ}\) = 0.32, \(F_{(2,176)}\) = 28.43, D = 0.13, \emph{p} \textless{} 0.001), 16\% contrast (\(T^2_{circ}\) = 0.28, \(F_{(2,176)}\) = 25.25, D = 0.19, \emph{p} \textless{} 0.001), 32\% contrast (\(T^2_{circ}\) = 0.10, \(F_{(2,176)}\) = 8.55, D = 0.14, \emph{p} \textless{} 0.001) and 64\% contrast (\(T^2_{circ}\) = 0.40, \(F_{(2,176)}\) = 35.35, D = 0.33, \emph{p} \textless{} 0.001). The study by Vilidaite et al. (2018) compared SSVEP responses between individuals with and without autism, as well as in a \emph{Drosophila} genetic model of developmental disorders. The raw data are available at: \url{http://dx.doi.org/10.17605/OSF.IO/Y4N5K}, and a processed version is included with the \href{https://github.com/bakerdh/FourierStats}{\emph{FourierStats}} package.
 
 \hypertarget{further-considerations}{%
 \section{Further considerations}\label{further-considerations}}
@@ -336,6 +336,9 @@ Engel SA, Rumelhart DE, Wandell BA, Lee AT, Glover GH, Chichilnisky EJ, Shadlen 
 
 \leavevmode\hypertarget{ref-Enroth-Cugell1966}{}%
 Enroth-Cugell C, Robson JG. 1966. The contrast sensitivity of retinal ganglion cells of the cat. \emph{J Physiol} \textbf{187}:517--52. doi:\href{https://doi.org/10.1113/jphysiol.1966.sp008107}{10.1113/jphysiol.1966.sp008107}
+
+\leavevmode\hypertarget{ref-Friedrich2019}{}%
+Friedrich S, Konietschke F, Pauly M. 2019. Resampling-Based Analysis of Multivariate Data and Repeated Measures Designs with the R Package MANOVA.RM. \emph{The R Journal} \textbf{11}:380--400. doi:\href{https://doi.org/10.32614/RJ-2019-051}{10.32614/RJ-2019-051}
 
 \leavevmode\hypertarget{ref-Gray2020}{}%
 Gray KLH, Flack TR, Yu M, Lygo FA, Baker DH. 2020. Nonlinear transduction of emotional facial expression. \emph{Vision Res} \textbf{170}:1--11. doi:\href{https://doi.org/10.1016/j.visres.2020.03.004}{10.1016/j.visres.2020.03.004}

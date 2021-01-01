@@ -15,6 +15,9 @@
 #' @export
 anovacirc.test <- function(data, group=NULL, participant=NULL){
 
+  grouplabels <- NULL
+  participantlabels <- NULL
+
   # if the input data is a vector, it must be complex Fourier components
   if (is.null(ncol(data))){datavals <- data}
 

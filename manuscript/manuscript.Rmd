@@ -34,7 +34,7 @@ if (length(missingpackages)>0){devtools::install_github("bakerdh/FourierStats")}
 toinstall <- packagelist[which(!packagelist %in% (.packages()))]
 invisible(lapply(toinstall,library,character.only=TRUE))
 
-nsims <- 10000  # global value for the whole script - increase to 100000 for final run, but note this takes around 15 hours to complete
+nsims <- 100  # global value for the whole script - increase to 100000 for final run, but note this takes around 15 hours to complete
 
 # palette using the main colours from the NBDT journal logo
 nbdtpal <- c(rgb(0,0,0),rgb(0.73,0.16,0.42),rgb(0.22,0.44,0.64),'darkgreen','darkorange')
@@ -763,7 +763,7 @@ Following ${ANOVA}^2_{circ}$, one could calculate $T^2_{circ}$ statistics to mak
 
 # Deciding which test to run
 
-The flowchart in Figure \@ref(fig:flowchart) contains a proposed decision structure for the analysis of periodic data, once any outliers have been removed. Initially, data for each condition should be tested against the expected distribution of eigenvalue ratios using the condition index test. Comparisons with one or two conditions should be tested with the $T^2_{circ}$ statistic if the eigenvalue ratios are consistent with circularity, and the $T^2$ statistic if not. Comparisons with more than two conditions should be tested with the $ANOVA^2_{circ}$ statistic if the eigenvalue ratios are consistent with circularity, or a MANOVA if not. Many MANOVA implementations cannot deal correctly with random factors (repeated measures) in complex factorial designs. However the _multRM_ function in the [_MANOVA.RM_]{https://CRAN.R-project.org/package=MANOVA.RM} package [@Friedrich2019] is able to handle such designs appropriately using a bootstrapping approach.
+The flowchart in Figure \@ref(fig:flowchart) contains a proposed decision structure for the analysis of periodic data, once any outliers have been removed. Initially, data for each condition should be tested against the expected distribution of eigenvalue ratios using the condition index test. Comparisons with one or two conditions should be tested with the $T^2_{circ}$ statistic if the eigenvalue ratios are consistent with circularity, and the $T^2$ statistic if not. Comparisons with more than two conditions should be tested with the $ANOVA^2_{circ}$ statistic if the eigenvalue ratios are consistent with circularity, or a MANOVA if not. Many MANOVA implementations cannot deal correctly with random factors (repeated measures) in complex factorial designs. However the _multRM_ function in the [_MANOVA.RM_](https://CRAN.R-project.org/package=MANOVA.RM) package [@Friedrich2019] is able to handle such designs appropriately using a bootstrapping approach.
 
 ```{r flowchart, fig.cap = 'Flowchart illustrating how one might decide which test to conduct for a given data set, based on the study design and the outcome of the condition index test.', fig.align="center", echo=FALSE}
 
