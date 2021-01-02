@@ -34,7 +34,7 @@ if (length(missingpackages)>0){devtools::install_github("bakerdh/FourierStats")}
 toinstall <- packagelist[which(!packagelist %in% (.packages()))]
 invisible(lapply(toinstall,library,character.only=TRUE))
 
-nsims <- 100  # global value for the whole script - increase to 100000 for final run, but note this takes around 15 hours to complete
+nsims <- 100  # global value for the whole script - increase to 100000 for final run, but note this takes around 16 hours to complete (depending on processor speed)
 
 # palette using the main colours from the NBDT journal logo
 nbdtpal <- c(rgb(0,0,0),rgb(0.73,0.16,0.42),rgb(0.22,0.44,0.64),'darkgreen','darkorange')
@@ -63,6 +63,20 @@ v4Interp <- function(df, xo, yo, rmax = .75, gridRes = 67) {
   names(outDf)[1:length(yo[1,])+1] <- yo[1,]
   return(outDf)}
 
+getbanana <- function(p){
+  thetaRange <- seq(0.01, pi, 0.01)
+  Tval <- atan((p[3]*tan(thetaRange))/p[4])
+  x1 <- p[1] + (p[3] * cos(Tval))
+  x2 <- p[1] - (p[3] * cos(Tval))
+  y <- p[2] + (p[4] * sin(Tval))
+  
+  XXX <- c(x1[1:(length(x1)/2)], x2[(length(x2)/2):1])
+  Y <- c(y[1:(length(y)/2)], y[(length(y)/2):1], y[length(y):(1+length(y)/2)], y[(1+length(y)/2):length(y)])
+  X <- c(XXX, XXX[length(XXX):1])
+  errormatrix <- pol2cart(matrix(data=c(Y,X),ncol=2))
+  return(errormatrix)
+}
+
 # helper function to add transparency to a colour
 addalpha <- function(col, alpha=1){apply(sapply(col, col2rgb)/255, 2, function(x) rgb(x[1], x[2], x[3], alpha=alpha))}
 
@@ -78,7 +92,119 @@ _Keywords:_ multivariate statistics, Fourier analysis, steady-state, condition i
 
 A widely used paradigm in many branches of neuroscience is to drive the nervous system using periodic stimuli. This entrains neural responses at the stimulation frequency, resulting in high signal-to-noise ratios relative to single stimulus presentations. These periodic responses, often called the _steady-state_ or _frequency following_ response, can be recorded using invasive methods from single neurons [@Enroth-Cugell1966] and local field potentials [@Morrone1987], or with non-invasive electroencephalography (EEG) and magnetoencephalography (MEG) systems, both in humans [@Norcia2015] and in diverse animal species including insects [@Afsari2014], birds [@Porciatti1990], rodents [@Hwang2019] and primates [@Nakayama1982]. Steady-state methods are used to measure early sensory responses in vision [@Regan1966], hearing [@Rees1986] and somatosensation [@Snyder1992], and closely related paradigms have been developed to target specific stimulus features such as orientation [@Braddick1986], and facial expression [@Gray2020] and identity [@Liu-Shuang2014]. In fMRI research, _travelling wave_ methods [@Engel1994; @Sereno1995] are used to map the retinotopic responses of early visual cortex using stimuli that change periodically in spatial position. Finally, physiological reflexes such as the pupillary response to light can be entrained in a similar way [@Spitschan2014].
 
-A convenient way to analyse the data from periodic stimulation experiments is to take the Fourier transform of the measured signal. The amplitude of the response at the stimulation frequency (and its harmonics - integer multiples of the stimulation frequency) is a precise and well-isolated index of the brain's response. Fourier spectra comprise both amplitude and phase information, which can be equivalently expressed as complex numbers with real and imaginary components. In many studies the phase information is routinely discarded, and statistical comparisons are performed on the amplitude data only. However an alternative is to use multivariate statistics, which take into account both the amplitude and phase information (represented as real and imaginary components). Multivariate methods have the advantage that they are more sensitive to weak signals, and therefore offer increased statistical power relative to univariate methods.
+A convenient way to analyse the data from periodic stimulation experiments is to take the Fourier transform of the measured signal. The amplitude of the response at the stimulation frequency (and its harmonics - integer multiples of the stimulation frequency) is a precise and well-defined index of the brain's response (see Figure \@ref(fig:fourierexplain)a,b). Fourier spectra comprise both amplitude and phase information that can be expressed in polar coordinates (Figure \@ref(fig:fourierexplain)c), or equivalently as complex numbers with real and imaginary components (Figure \@ref(fig:fourierexplain)d). In many studies the phase information is routinely discarded, and statistical comparisons are performed on the amplitude data only. However an alternative is to use multivariate statistics, which take into account both the amplitude and phase information (represented as real and imaginary components). Multivariate methods have the advantage that they are more sensitive to weak signals, and therefore offer increased statistical power relative to univariate methods.
+
+```{r fourierexplain, fig.cap="Illustration of the principles of Fourier analysis for time-varying signals. Panel (a) shows a sinusoidal signal waveform, and simulated neural responses for successive observations (repetitions in the same individual, or recorded from multiple individuals). Panel (b) shows the Fourier amplitude spectra of the waveforms in (a), with clear peaks at the signal frequency (5Hz) in each example. The Fourier spectrum also includes a phase term, which can be represented in polar coordinates (amplitude and phase); panel (c) shows this for example responses at the signal frequency (grey points) and their average (blue point), which is computed separately for amplitude and phase terms. Alternatively, the same information is contained in a Cartesian representation of the real and imaginary parts of the complex spectrum (panel (d)). Notice that the individual observations (grey points) are the same in panels (c,d), but the different representations have implications for how the average (blue points) and measures of spread (shaded regions) are calculated.", fig.align="center", echo=FALSE, fig.width=9, fig.height=8}
+
+set.seed(170382)
+
+par(mfrow=c(2,1), mar=c(3,4,1,2))
+
+plotlims <- c(0,2.4,0,6) 
+ticklocsx <- seq(0,1,0.5)    # locations of tick marks on x axis
+ticklocsy <- seq(0,0.1,0.02)    # locations of tick marks on y axis
+ticklabelsx <- ticklocsx        # set labels for x ticks
+ticklabelsy <- ticklocsy    # set labels for y ticks
+
+plot(x=NULL,y=NULL,axes=FALSE, ann=FALSE, xlim=plotlims[1:2], ylim=plotlims[3:4])   
+axis(1, at=seq(0,1,0.2), tck=0.01, lab=F, lwd=2)     # plot tick marks (no labels)
+axis(1, at=seq(1.4,2.4,0.1), tck=0.01, lab=F, lwd=2) 
+mtext(text = seq(0,1,0.2), side = 1, at=seq(0,1,0.2), line=0.2)
+mtext(text = seq(0,20,2), side = 1, at=seq(1.4,2.4,0.1), line=0.2)
+mtext(text = 'Time (s)', side = 1, cex=1.5, line=1.7, at=0.5) 
+mtext(text = 'Frequency (Hz)', side = 1, cex=1.5, line=1.7, at=1.9) 
+
+text(1.2,5.5,'Signal',cex=1.2,adj=0.5)
+text(1.2,4.5,'Observation',cex=1,adj=0.5)
+text(1.2,3.75,'1',cex=1.2,adj=0.5)
+text(1.2,2.75,'2',cex=1.2,adj=0.5)
+text(1.2,1.75,'3',cex=1.2,adj=0.5)
+text(1.2,1.1,'.',cex=1.2,adj=0.5)
+text(1.2,1,'.',cex=1.2,adj=0.5)
+text(1.2,0.9,'.',cex=1.2,adj=0.5)
+text(1.2,0.25,'N',cex=1.2,adj=0.5)
+
+text(0,5.8,'(a)',cex=1.5,adj=0.5)
+text(1.45,5.8,'(b)',cex=1.5,adj=0.5)
+
+
+tvals <- seq(0,10-0.001,0.001)
+fvals <- c(0:(length(tvals)/2-1),(length(tvals)/2-1):0)/10
+signal <- 0.8*cos(5*tvals * 2*pi + pi)
+
+lines(tvals[1:1000],5+(signal[1:1000]+1)/2,lwd=2)
+
+fsignal <- abs(fft(signal))/length(signal)
+lines(1.4+fvals[10:200]/20,5+(2*fsignal[10:200]),lwd=2)
+
+signal <- 0.8*cos(5*tvals * 2*pi + 3*pi/2)
+ypos <- c(0,1.5,2.5,3.5)
+for (n in 1:4){
+nspec <- ((fft(signal)/length(signal)) + 0.2*rnorm(length(fvals))/fvals)
+nspec[c(1:10,9991:10000)] <- 0
+lines(1.4+fvals[10:200]/20,ypos[n]+(2*abs(nspec[10:200])),lwd=2)
+
+nsignal <- Re(fft(nspec, inverse=TRUE))
+nsignal <- nsignal[1:1000]/max(abs(nsignal[1:1000]))
+nsignal <- nsignal - mean(nsignal)
+lines(tvals[1:1000],ypos[n]-0.5+(nsignal[1:1000]+1),lwd=2)
+}
+
+signal <- 0.4*cos(5*tvals * 2*pi + pi/4)
+allsimsignals <- NULL
+nspec <- fft(signal)/length(signal)
+for (n in 1:20){
+  respec <- Re(nspec) + 1*rnorm(length(fvals))/fvals
+  imspec <- Im(nspec) + 1*rnorm(length(fvals))/fvals
+  
+  allsimsignals[n] <- complex(real=respec[51],imaginary=imspec[51])
+}
+
+
+plot(x=NULL,y=NULL,axes=FALSE, ann=FALSE, xlim=c(-1,3.8), ylim=c(-1,1))   
+
+rangles <- seq(0,360)*(pi/180)
+r <- seq(0.2,1,0.2)
+for (n in 1:length(r)){
+  lines(r[n]*cos(rangles),r[n]*sin(rangles),col='gray')
+}
+lines(c(0,0),c(-1,1),lwd=2)
+lines(cos(c(30,210)*pi/180),sin(c(30,210)*pi/180),lwd=2)
+lines(cos(c(150,330)*pi/180),sin(c(150,330)*pi/180),lwd=2)
+
+text(0.5,-0.2,'Amplitude',cex=1.2,adj=0.5,srt=-30)
+text(1.1,0,'Phase',cex=1.2,adj=0.5,srt=-90)
+
+stdresps <- sd(Mod(allsimsignals))
+stdangles <- sd(Arg(allsimsignals))
+pvals <- getbanana(c(mean(Mod(allsimsignals)),Arg(mean(allsimsignals)),stdresps,stdangles))
+polygon(pvals[,1], pvals[,2], col=addalpha(nbdtpal[3],0.2), border=NA)
+
+for (n in 1:length(allsimsignals)){lines(c(0,Re(allsimsignals[n])),c(0,Im(allsimsignals[n])),col=addalpha(nbdtpal[1],0.5))}
+points(Re(allsimsignals),Im(allsimsignals),pch=16,col=addalpha(nbdtpal[1],0.5),cex=0.8)
+
+meanangle <- mean(((Arg(allsimsignals)-1) %% 2*pi)+1)
+meanangle <- Arg(mean(allsimsignals))
+meanamp <- mean(Mod(allsimsignals))
+y <- meanamp*sin(meanangle)
+x <- meanamp*cos(meanangle)
+lines(c(0,x),c(0,y),lwd=3,col=nbdtpal[3])
+points(x,y,pch=21,bg=nbdtpal[3],cex=1.5)
+
+arrows(2.8,-1,2.8,1,length=0.1,lwd=2)
+arrows(1.8,0,3.8,0,length=0.1,lwd=2)
+text(1.93,0.1,'Real',cex=1.2,adj=0.5)
+text(2.7,-0.7,'Imaginary',cex=1.2,adj=0.5,srt=90)
+
+points(Re(allsimsignals)+2.8,Im(allsimsignals),pch=16,col=addalpha(nbdtpal[1],0.5),cex=0.8)
+points(Re(mean(allsimsignals))+2.8,Im(mean(allsimsignals)),pch=21,bg=nbdtpal[3],cex=1.5)
+eldata <- getel(allsimsignals)
+polygon(eldata[1,]+2.8,eldata[2,], col=addalpha(nbdtpal[3],0.2), border=NA)
+
+text(-1,1,'(c)',cex=1.5,adj=0.5)
+text(1.8,1,'(d)',cex=1.5,adj=0.5)
+
+```
 
 For pointwise and pairwise comparisons, Hotelling's $T^2$ statistic [@Hotelling1931] is a multivariate extension of the T-test. For the one-sample case, the test statistic is defined as:
 
@@ -118,8 +244,8 @@ for (n in 1:5){lines(c(5,5)+(n-1)*12,c(13,23),lwd=2)}
 for (n in 1:5){lines(c((n-1)*12,(n*12)-2),c(0,0),lwd=2)}
 for (n in 1:5){lines(c(0,0)+(n-1)*12,c(0,10),lwd=2)}
 
-text(0.5,19,'x',adj=0.5,cex=1.5)
-text(4,13.5,'y',adj=0.5,cex=1.5)
+text(0.6,19,'Re',adj=0.5,cex=1.5)
+text(4,13.6,'Im',adj=0.5,cex=1.5,srt=90)
 
 
 for (d in 1:5){
@@ -142,10 +268,6 @@ a$x <- a$x/max(a$x)
 a$x <- 10*a$x
 a$y <- 10*a$y/max(a$y)
 polygon(a$x+(d-1)*12,a$y,col=addalpha(nbdtpal[d],alpha=0.3),border=NA)
-
-# lines(seq(0,10,0.01)+(d-1)*12,10*pnorm(seq(-5,5,0.01)),lwd=2)
-# q <- quantile(scale(absvals),probs=seq(0,1,0.001))
-# lines(5+q+(d-1)*12,seq(0,10,0.01),lwd=2,col=nbdtpal[d])
 
 }
 
@@ -233,7 +355,7 @@ title(ylab="Effect size (d)", col.lab=rgb(0,0,0), line=1.5, cex.lab=1.5)
 title(expression(T^2),cex.main=2)
 image(slist,dlist,tsqpropM,zlim=c(0,1),add=TRUE,col=kovesi.linear_blue_95_50_c20(256))
 text(1.1,3.8,'(d)',cex=2)
-legend(3.4,3.8,c('0','0.5','1'),lwd=6,cex=1.5,col=kovesi.linear_blue_95_50_c20(3),box.lwd=2,bg='white',title='Proportion')
+legend(3.4,3.8,c('0','0.5','1'),lwd=6,cex=1.5,col=kovesi.linear_blue_95_50_c20(3),box.lwd=2,bg='white',title='Power')
 
 par(pty="s")
 plot(x=NULL,y=NULL,axes=FALSE, ann=FALSE, xlim=c(1,5), ylim=c(0,4))
@@ -333,7 +455,7 @@ for (cond in 1:length(corvals)){
   RR     <- chol(A)                               # Cholesky decomposition
   angles <- seq(0, 2*pi, length.out=200)          # angles for ellipse
   ell    <- 1 * cbind(cos(angles), sin(angles)) %*% RR  # ellipse scaled with factor 1
-  ellCtr <- sweep(ell, 2, ctr, "+")               # center ellipse to the data centroid
+  ellCtr <- sweep(ell, 2, ctr, "+")  # center ellipse to the data centroid
   eigVal  <- eigen(A)$values
   eigVec  <- eigen(A)$vectors
   eigScl  <- eigVec  %*% diag(sqrt(eigVal))  # scale eigenvectors to length = square-root
@@ -409,7 +531,7 @@ for (cond in 1:length(corvals)){
   RR     <- chol(A)                               # Cholesky decomposition
   angles <- seq(0, 2*pi, length.out=200)          # angles for ellipse
   ell    <- 1 * cbind(cos(angles), sin(angles)) %*% RR  # ellipse scaled with factor 1
-  ellCtr <- sweep(ell, 2, ctr, "+")               # center ellipse to the data centroid
+  ellCtr <- sweep(ell, 2, ctr, "+")    # center ellipse to the data centroid
   eigVal  <- eigen(A)$values
   eigVec  <- eigen(A)$vectors
   eigScl  <- eigVec  %*% diag(sqrt(eigVal))  # scale eigenvectors to length = square-root
@@ -639,7 +761,7 @@ The F-statistic for a one-way ANOVA is calculated by taking the ratio between th
 
 A suitable name for such a test might be ${ANOVA}^2_{circ}$, as this reflects the similarity to ANOVA, and the extension of the logic of $T^2_{circ}$ (an alternative name might be $MANOVA_{circ}$, however this feels less appropriate given that many of the key features of MANOVA are absent). Figure \@ref(fig:powerfig2) shows simulations analogous to those in Figure \@ref(fig:powerfig) for a one-way between-subjects design with three levels. MANOVA is directly compared to the ${ANOVA}^2_{circ}$ statistic across a range of effect sizes and sample sizes. Just as for the one-sample statistics, the advantages of ${ANOVA}^2_{circ}$ are particularly apparent for small sample sizes, and larger effect sizes (Figure \@ref(fig:powerfig2)f).
 
-```{r powerfig2, fig.cap="Simulations comparing the sensitivity of MANOVA and ANOVA2circ. The format mirrors that of Figure 2. In these simulations, there were three conditions, with the signal being added to one condition only.", fig.align="center", echo=FALSE, fig.width=12, fig.height=8}
+```{r powerfig2, fig.cap="Simulations comparing the sensitivity of MANOVA and ANOVA2circ. The format mirrors that of Figure 3. In these simulations, there were three conditions, with the signal being added to one condition only.", fig.align="center", echo=FALSE, fig.width=12, fig.height=8}
 
 layout(matrix(1:6,nrow=2,ncol=3,byrow=TRUE))
 abc <- c('a','b','c')
@@ -722,7 +844,7 @@ title(ylab="Effect size (d)", col.lab=rgb(0,0,0), line=1.5, cex.lab=1.5)
 title(expression('MANOVA'),cex.main=2)
 image(slist,dlist,manovapropM,zlim=c(0,1),add=TRUE,col=kovesi.linear_blue_95_50_c20(256))
 text(1.1,3.8,'(d)',cex=2)
-legend(3.4,3.8,c('0','0.5','1'),lwd=6,cex=1.5,col=kovesi.linear_blue_95_50_c20(3),box.lwd=2,bg='white',title='Proportion')
+legend(3.4,3.8,c('0','0.5','1'),lwd=6,cex=1.5,col=kovesi.linear_blue_95_50_c20(3),box.lwd=2,bg='white',title='Power')
 
 par(pty="s")
 plot(x=NULL,y=NULL,axes=FALSE, ann=FALSE, xlim=c(1,5), ylim=c(0,4))

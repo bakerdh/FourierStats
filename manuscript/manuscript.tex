@@ -69,7 +69,7 @@
 
 \title{Statistical analysis of periodic data in neuroscience}
 \author{Daniel H. Baker}
-\date{2021-01-01}
+\date{2021-01-02}
 
 \begin{document}
 \maketitle
@@ -86,7 +86,16 @@ Many experimental paradigms in neuroscience involve driving the nervous system w
 
 A widely used paradigm in many branches of neuroscience is to drive the nervous system using periodic stimuli. This entrains neural responses at the stimulation frequency, resulting in high signal-to-noise ratios relative to single stimulus presentations. These periodic responses, often called the \emph{steady-state} or \emph{frequency following} response, can be recorded using invasive methods from single neurons (Enroth-Cugell and Robson, 1966) and local field potentials (Morrone et al., 1987), or with non-invasive electroencephalography (EEG) and magnetoencephalography (MEG) systems, both in humans (Norcia et al., 2015) and in diverse animal species including insects (Afsari et al., 2014), birds (Porciatti et al., 1990), rodents (Hwang et al., 2019) and primates (Nakayama and Mackeben, 1982). Steady-state methods are used to measure early sensory responses in vision (Regan, 1966), hearing (Rees et al., 1986) and somatosensation (Snyder, 1992), and closely related paradigms have been developed to target specific stimulus features such as orientation (Braddick et al., 1986), and facial expression (Gray et al., 2020) and identity (Liu-Shuang et al., 2014). In fMRI research, \emph{travelling wave} methods (Engel et al., 1994; Sereno et al., 1995) are used to map the retinotopic responses of early visual cortex using stimuli that change periodically in spatial position. Finally, physiological reflexes such as the pupillary response to light can be entrained in a similar way (Spitschan et al., 2014).
 
-A convenient way to analyse the data from periodic stimulation experiments is to take the Fourier transform of the measured signal. The amplitude of the response at the stimulation frequency (and its harmonics - integer multiples of the stimulation frequency) is a precise and well-isolated index of the brain's response. Fourier spectra comprise both amplitude and phase information, which can be equivalently expressed as complex numbers with real and imaginary components. In many studies the phase information is routinely discarded, and statistical comparisons are performed on the amplitude data only. However an alternative is to use multivariate statistics, which take into account both the amplitude and phase information (represented as real and imaginary components). Multivariate methods have the advantage that they are more sensitive to weak signals, and therefore offer increased statistical power relative to univariate methods.
+A convenient way to analyse the data from periodic stimulation experiments is to take the Fourier transform of the measured signal. The amplitude of the response at the stimulation frequency (and its harmonics - integer multiples of the stimulation frequency) is a precise and well-defined index of the brain's response (see Figure \ref{fig:fourierexplain}a,b). Fourier spectra comprise both amplitude and phase information that can be expressed in polar coordinates (Figure \ref{fig:fourierexplain}c), or equivalently as complex numbers with real and imaginary components (Figure \ref{fig:fourierexplain}d). In many studies the phase information is routinely discarded, and statistical comparisons are performed on the amplitude data only. However an alternative is to use multivariate statistics, which take into account both the amplitude and phase information (represented as real and imaginary components). Multivariate methods have the advantage that they are more sensitive to weak signals, and therefore offer increased statistical power relative to univariate methods.
+
+\begin{figure}
+
+{\centering \includegraphics{manuscript_files/figure-latex/fourierexplain-1} 
+
+}
+
+\caption{Illustration of the principles of Fourier analysis for time-varying signals. Panel (a) shows a sinusoidal signal waveform, and simulated neural responses for successive observations (repetitions in the same individual, or recorded from multiple individuals). Panel (b) shows the Fourier amplitude spectra of the waveforms in (a), with clear peaks at the signal frequency (5Hz) in each example. The Fourier spectrum also includes a phase term, which can be represented in polar coordinates (amplitude and phase); panel (c) shows this for example responses at the signal frequency (grey points) and their average (blue point), which is computed separately for amplitude and phase terms. Alternatively, the same information is contained in a Cartesian representation of the real and imaginary parts of the complex spectrum (panel (d)). Notice that the individual observations (grey points) are the same in panels (c,d), but the different representations have implications for how the average (blue points) and measures of spread (shaded regions) are calculated.}\label{fig:fourierexplain}
+\end{figure}
 
 For pointwise and pairwise comparisons, Hotelling's \(T^2\) statistic (Hotelling, 1931) is a multivariate extension of the T-test. For the one-sample case, the test statistic is defined as:
 
@@ -227,7 +236,7 @@ A suitable name for such a test might be \({ANOVA}^2_{circ}\), as this reflects 
 
 }
 
-\caption{Simulations comparing the sensitivity of MANOVA and ANOVA2circ. The format mirrors that of Figure 2. In these simulations, there were three conditions, with the signal being added to one condition only.}\label{fig:powerfig2}
+\caption{Simulations comparing the sensitivity of MANOVA and ANOVA2circ. The format mirrors that of Figure 3. In these simulations, there were three conditions, with the signal being added to one condition only.}\label{fig:powerfig2}
 \end{figure}
 
 Following \({ANOVA}^2_{circ}\), one could calculate \(T^2_{circ}\) statistics to make post-hoc pairwise comparisons between conditions, providing that appropriate multiple comparison correction is applied (e.g.~Bonferroni correction). Univariate ANOVAs on the real and imaginary components are unlikely to be informative, as the relative magnitudes depend on stimulus phase (which is arbitrary). A repeated measures version of \({ANOVA}^2_{circ}\) has also been implemented following the same logic. The project repository contains an \emph{R} function (\emph{anovacirc.test}) to run both of these tests.
@@ -235,7 +244,7 @@ Following \({ANOVA}^2_{circ}\), one could calculate \(T^2_{circ}\) statistics to
 \hypertarget{deciding-which-test-to-run}{%
 \section{Deciding which test to run}\label{deciding-which-test-to-run}}
 
-The flowchart in Figure \ref{fig:flowchart} contains a proposed decision structure for the analysis of periodic data, once any outliers have been removed. Initially, data for each condition should be tested against the expected distribution of eigenvalue ratios using the condition index test. Comparisons with one or two conditions should be tested with the \(T^2_{circ}\) statistic if the eigenvalue ratios are consistent with circularity, and the \(T^2\) statistic if not. Comparisons with more than two conditions should be tested with the \(ANOVA^2_{circ}\) statistic if the eigenvalue ratios are consistent with circularity, or a MANOVA if not. Many MANOVA implementations cannot deal correctly with random factors (repeated measures) in complex factorial designs. However the \emph{multRM} function in the {[}\emph{MANOVA.RM}{]}\{\url{https://CRAN.R-project.org/package=MANOVA.RM}\} package (Friedrich et al., 2019) is able to handle such designs appropriately using a bootstrapping approach.
+The flowchart in Figure \ref{fig:flowchart} contains a proposed decision structure for the analysis of periodic data, once any outliers have been removed. Initially, data for each condition should be tested against the expected distribution of eigenvalue ratios using the condition index test. Comparisons with one or two conditions should be tested with the \(T^2_{circ}\) statistic if the eigenvalue ratios are consistent with circularity, and the \(T^2\) statistic if not. Comparisons with more than two conditions should be tested with the \(ANOVA^2_{circ}\) statistic if the eigenvalue ratios are consistent with circularity, or a MANOVA if not. Many MANOVA implementations cannot deal correctly with random factors (repeated measures) in complex factorial designs. However the \emph{multRM} function in the \href{https://CRAN.R-project.org/package=MANOVA.RM}{\emph{MANOVA.RM}} package (Friedrich et al., 2019) is able to handle such designs appropriately using a bootstrapping approach.
 
 \begin{figure}
 
@@ -305,7 +314,7 @@ The simulations reported here allow several recommendations to be made for how p
 
 \hypertarget{refs}{}
 \leavevmode\hypertarget{ref-Afsari2014}{}%
-Afsari F, Christensen KV, Smith GP, Hentzer M, Nippe OM, Elliott CJH, Wade AR. 2014. Abnormal visual gain control in a parkinson's disease model. \emph{Hum Mol Genet} \textbf{23}:4465--78. doi:\href{https://doi.org/10.1093/hmg/ddu159}{10.1093/hmg/ddu159}
+Afsari F, Christensen KV, Smith GP, Hentzer M, Nippe OM, Elliott CJH, Wade AR. 2014. Abnormal visual gain control in a Parkinson's disease model. \emph{Hum Mol Genet} \textbf{23}:4465--78. doi:\href{https://doi.org/10.1093/hmg/ddu159}{10.1093/hmg/ddu159}
 
 \leavevmode\hypertarget{ref-Baker2021}{}%
 Baker DH, Vilidaite G, Lygo FA, Smith AK, Flack TR, Gouws AD, Andrews TJ. 2021. Power contours: Optimising sample size and precision in experimental psychology and human neuroscience. \emph{Psychological Methods}. doi:\href{https://doi.org/10.1037/met0000337}{10.1037/met0000337}
@@ -332,7 +341,7 @@ Del Giudice M. 2009. On the real magnitude of psychological sex differences. \em
 Edelman A. 1988. Eigenvalues and condition numbers of random matrices. \emph{SIAM Journal on Matrix Analysis and Applications} \textbf{9}:543--560. doi:\href{https://doi.org/10.1137/0609045}{10.1137/0609045}
 
 \leavevmode\hypertarget{ref-Engel1994}{}%
-Engel SA, Rumelhart DE, Wandell BA, Lee AT, Glover GH, Chichilnisky EJ, Shadlen MN. 1994. FMRI of human visual cortex. \emph{Nature} \textbf{369}:525. doi:\href{https://doi.org/10.1038/369525a0}{10.1038/369525a0}
+Engel SA, Rumelhart DE, Wandell BA, Lee AT, Glover GH, Chichilnisky EJ, Shadlen MN. 1994. fMRI of human visual cortex. \emph{Nature} \textbf{369}:525. doi:\href{https://doi.org/10.1038/369525a0}{10.1038/369525a0}
 
 \leavevmode\hypertarget{ref-Enroth-Cugell1966}{}%
 Enroth-Cugell C, Robson JG. 1966. The contrast sensitivity of retinal ganglion cells of the cat. \emph{J Physiol} \textbf{187}:517--52. doi:\href{https://doi.org/10.1113/jphysiol.1966.sp008107}{10.1113/jphysiol.1966.sp008107}
@@ -347,13 +356,13 @@ Gray KLH, Flack TR, Yu M, Lygo FA, Baker DH. 2020. Nonlinear transduction of emo
 Grootswagers T, Wardle SG, Carlson TA. 2017. Decoding dynamic brain patterns from evoked responses: A tutorial on multivariate pattern analysis applied to time series neuroimaging data. \emph{J Cogn Neurosci} \textbf{29}:677--697. doi:\href{https://doi.org/10.1162/jocn_a_01068}{10.1162/jocn\_a\_01068}
 
 \leavevmode\hypertarget{ref-Hotelling1931}{}%
-Hotelling H. 1931. The generalization of student's ratio. \emph{The Annals of Mathematical Statistics} \textbf{2}:360--378.
+Hotelling H. 1931. The generalization of Student's ratio. \emph{The Annals of Mathematical Statistics} \textbf{2}:360--378.
 
 \leavevmode\hypertarget{ref-Hwang2019}{}%
 Hwang E, Brown RE, Kocsis B, Kim T, McKenna JT, McNally JM, Han H-B, Choi JH. 2019. Optogenetic stimulation of basal forebrain parvalbumin neurons modulates the cortical topography of auditory steady-state responses. \emph{Brain Struct Funct} \textbf{224}:1505--1518. doi:\href{https://doi.org/10.1007/s00429-019-01845-5}{10.1007/s00429-019-01845-5}
 
 \leavevmode\hypertarget{ref-Hwang2020}{}%
-Hwang E, Han H-B, Kim JY, Choi JH. 2020. High-density eeg of auditory steady-state responses during stimulation of basal forebrain parvalbumin neurons. \emph{Sci Data} \textbf{7}:288. doi:\href{https://doi.org/10.1038/s41597-020-00621-z}{10.1038/s41597-020-00621-z}
+Hwang E, Han H-B, Kim JY, Choi JH. 2020. High-density EEG of auditory steady-state responses during stimulation of basal forebrain parvalbumin neurons. \emph{Sci Data} \textbf{7}:288. doi:\href{https://doi.org/10.1038/s41597-020-00621-z}{10.1038/s41597-020-00621-z}
 
 \leavevmode\hypertarget{ref-Jeffreys1961}{}%
 Jeffreys H. 1961. Theory of probability, 3rd ed. Oxford University Press.
@@ -368,7 +377,7 @@ Mahalanobis P. 1936. On the generalised distance in statistics. \emph{Proceeding
 Maris E, Oostenveld R. 2007. Nonparametric statistical testing of EEG- and MEG-data. \emph{J Neurosci Methods} \textbf{164}:177--90. doi:\href{https://doi.org/10.1016/j.jneumeth.2007.03.024}{10.1016/j.jneumeth.2007.03.024}
 
 \leavevmode\hypertarget{ref-Morrone1987}{}%
-Morrone MC, Burr DC, Speed HD. 1987. Cross-orientation inhibition in cat is gaba mediated. \emph{Exp Brain Res} \textbf{67}:635--44. doi:\href{https://doi.org/10.1007/BF00247294}{10.1007/BF00247294}
+Morrone MC, Burr DC, Speed HD. 1987. Cross-orientation inhibition in cat is GABA mediated. \emph{Exp Brain Res} \textbf{67}:635--44. doi:\href{https://doi.org/10.1007/BF00247294}{10.1007/BF00247294}
 
 \leavevmode\hypertarget{ref-Nakayama1982}{}%
 Nakayama K, Mackeben M. 1982. Steady state visual evoked potentials in the alert primate. \emph{Vision Res} \textbf{22}:1261--71. doi:\href{https://doi.org/10.1016/0042-6989(82)90138-9}{10.1016/0042-6989(82)90138-9}
@@ -413,6 +422,6 @@ Victor JD, Mast J. 1991. A new statistic for steady-state evoked potentials. \em
 Vilidaite G, Norcia AM, West RJH, Elliott CJH, Pei F, Wade AR, Baker DH. 2018. Autism sensory dysfunction in an evolutionarily conserved system. \emph{Proc Biol Sci} \textbf{285}:20182255. doi:\href{https://doi.org/10.1098/rspb.2018.2255}{10.1098/rspb.2018.2255}
 
 \leavevmode\hypertarget{ref-West2015}{}%
-West RJH, Elliott CJH, Wade AR. 2015. Classification of parkinson's disease genotypes in drosophila using spatiotemporal profiling of vision. \emph{Sci Rep} \textbf{5}:16933. doi:\href{https://doi.org/10.1038/srep16933}{10.1038/srep16933}
+West RJH, Elliott CJH, Wade AR. 2015. Classification of Parkinson's Disease Genotypes in Drosophila Using Spatiotemporal Profiling of Vision. \emph{Sci Rep} \textbf{5}:16933. doi:\href{https://doi.org/10.1038/srep16933}{10.1038/srep16933}
 
 \end{document}
