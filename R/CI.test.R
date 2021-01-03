@@ -16,8 +16,7 @@ CI.test <- function(data, alpha=0.05){
   eigVal  <- eigen(C)$values  # calculate eigenvalues
   CI <- sqrt(eigVal[1]/eigVal[2]) # calculate condition index
 
-  maxci <- max(20,round(CI+5))   # make sure our target CI is in range
-  cilist <- seq(1,maxci,0.01)    # list of possible CIs
+  cilist <- seq(1,100,0.001)    # list of possible CIs
 
   # calculate probability density function using modified Edelman equation
   pdffunction <- ((N-2)*(2^(N-2))) *
@@ -25,8 +24,9 @@ CI.test <- function(data, alpha=0.05){
   cdfinverse <- 1-(cumsum(pdffunction)/sum(pdffunction)) # inverse of cdf
   criticalCI <- cilist[min(which(cdfinverse<=alpha))]  # find the threshold CI
 
+  pvals <- 0
   indices <- which(cilist>=CI)  # find the CI values larger than our CI
-  pval <- cdfinverse[indices[1]] # estimate the p-value
+  if (length(indices)>0){pval <- cdfinverse[indices[1]]} # estimate the p-value
 
   output <- data.frame(CI,N,criticalCI,pval)
   return(output)}
