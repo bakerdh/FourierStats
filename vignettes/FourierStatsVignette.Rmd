@@ -1,0 +1,206 @@
+---
+title: "FourierStatsVignette"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{FourierStatsVignette}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(FourierStats)
+```
+
+This vignette demonstrates the main functions from the _FourierStats_ package. Details of the rationale are included in the original paper by Baker (2021: ArXiV). The functions are intended for analysis of data from periodic stimulation experiments in neuroscience (both in human and animal systems). For examples, we will use the human SSVEP data set described in Figure 10 of the paper, originally published by Vilidaite et al. (2018; [doi:10.1098/rspb.2018.2255](http://doi.org/10.1098/rspb.2018.2255)), with the raw data available at: [http://dx.doi.org/10.17605/OSF.IO/Y4N5K](http://dx.doi.org/10.17605/OSF.IO/Y4N5K)
+
+We can load in a processed data set included with the _FourierStats_ package as follows:
+
+```{r}
+load(system.file("extdata", "humanSSVEPdata.RData", package = "FourierStats"))
+```
+
+Note that the data are included as an _RData_ file, but comprise multiple variables, so this is a convenient way to import them. The _alltarget_ variable is a 100 (participants) x 66 (electrodes) x 7 (conditions) array of complex numbers. Each complex number has a real and imaginary component, accessed as follows:
+
+```{r}
+alltarget[1,1,1]
+
+Re(alltarget[1,1,1])
+
+Im(alltarget[1,1,1])
+
+```
+
+Let's consider data from all participants for a single electrode (_Oz_, stored in column 31), and condition (condition 7, a high intensity stimulus):
+
+```{r}
+data <- alltarget[,31,7]
+
+```
+
+We can run a one-sample $T^2_{circ}$ test as follows:
+
+```{r}
+tsqc.test(data)
+
+```
+
+Or a one-sample $T^2$ test as follows:
+
+```{r}
+tsq1.test(data)
+
+```
+
+If we wish to compare two conditions, we could do so as follows:
+
+```{r}
+tsqc.test(alltarget[,31,1],alltarget[,31,7],paired=TRUE)
+
+```
+
+Note that a two-sample independent Hotelling's $T^2$ test is included in the _Hotelling_ package (_hotelling.test_ function). A repeated measures (paired) test can be conducted by subtracting the conditions and running a one-sample test (this is mathematically equivalent).
+
+To run a repeated measures $ANOVA^2_{circ}$ test on all 7 conditions, we would first restructure the data (using the _melt_ function from the _reshape2_ package), and create some group and participant labels, before calling the _anovacirc.test_ function:
+
+```{r}
+grouplabels <- as.factor(rep(1:7,each=100))
+participant <- as.factor(rep(1:100,times=7))
+a <- reshape2::melt(alltarget[,31,])
+alldata <- a[,3]
+anovacirc.test(data.frame(alldata,grouplabels,participant))
+
+```
+
+If the test assumptions for $ANOVA^2_{circ}$ are not met (see below), a MANOVA can be run instead. There are many MANOVA implementations available in _R_, including the _manova_ function from the _stats_ package. For repeated measures designs, the _MANOVA.RM_ package deals appropriately with the repeated measures component.
+
+Before running the above tests, it is good practice to identify and remove outliers using the _mahalanobis_ function (from the _stats_ package) to calculate the Mahalanobis distance for each data point. This requires us to manually convert the real and imaginary components to separate columns of a data frame:
+
+```{r}
+data <- data.frame(Re(alltarget[,31,7]),Im(alltarget[,31,7]))
+D <- sqrt(mahalanobis(data, colMeans(data), cov(data)))
+which(D>3)
+
+```
+
+This identifies three data points (in rows 3, 37 and 47) that are outliers (plotted below in red) and should be excluded:
+
+```{r}
+i <- which(D>3)
+plot(data[,1],data[,2],type='p',pch=16)
+points(data[i,1],data[i,2],pch=16,col='red',cex=2)
+data <- alltarget[-i,31,7]
+
+```
+
+We should also run the condition index test to test the assumptions of $T^2_{circ}$ and $ANOVA^2_{circ}$:
+
+```{r}
+CI.test(data)
+
+```
+
+A non-significant _p_-value means that the assumptions of the $T^2_{circ}$ and $ANOVA^2_{circ}$ test are met. This should be done for each condition separately.
+
+To calculate pairwise Mahalanobis distances as measures of effect size, we can use the _pairwise.mahalanobis_ function from the _HDMD_ package:
+
+```{r}
+A <- data.frame(Re(alltarget[,31,1]),Im(alltarget[,31,1]))
+B <- data.frame(Re(alltarget[,31,7]),Im(alltarget[,31,7]))
+colnames(A) <- c('x','y')
+colnames(B) <- c('x','y')
+fores <- rbind(A,B)
+mahala_sq <- HDMD::pairwise.mahalanobis(fores, rep(1:2,each=100))
+sqrt(mahala_sq$distance)
+
+```
+
+The function returns the squared distance, so we take the square root for the _D_ statistic.
+
+Alternatively the _analysecplx_ function will perform the condition index test, and then run an appropriate test based on its outcome and the study design, as well as calculating the largest effect size: 
+
+```{r}
+analysecplx(data.frame(alldata,grouplabels,participant))
+
+```
+
+To perform cluster correction across the 64 sensors in the EEG montage, we first calculate an adjacency matrix:
+
+```{r}
+distmatrix <- matrix(0,nrow=64,ncol=64)
+adjacencymatrix <- matrix(0,nrow=64,ncol=64)
+for (n in 1:64){
+  for (m in 1:64){
+    xy1 <- montage$electrodelocs[montage$channelmappings[n],1:2]
+    xy2 <- montage$electrodelocs[montage$channelmappings[m],1:2]
+    distmatrix[n,m] <- as.numeric(sqrt((xy1[1]-xy2[1])^2 + (xy1[2]-xy2[2])^2))
+  }
+}
+threshold <- 0.18
+i1 <- which(distmatrix<=threshold)
+i2 <- which(distmatrix==0)
+adjacencymatrix[i1] <- 1
+adjacencymatrix[i2] <- 0
+
+```
+
+The adjacency matrix determines which electrodes are next to each other, which we can also visualise as follows:
+
+```{r}
+par(pty="s", mar=c(0,0,0,0))  # make axis square
+plot(x=NULL,y=NULL,axes=FALSE,ann=FALSE, xlim=c(-0.6,0.6), ylim=c(-0.6,0.6))
+for (m in 1:64){
+  for (n in 1:64){
+    if (adjacencymatrix[m,n]){
+      lines(montage$electrodelocs[montage$channelmappings[c(n,m)],1],montage$electrodelocs[montage$channelmappings[c(n,m)],2])
+    }
+  }
+}
+for (n in 1:64){points(montage$electrodelocs[n,1],montage$electrodelocs[n,2],pch=16)}
+
+lines(montage$headoutline[,1],montage$headoutline[,2],lwd=2)
+lines(montage$noseoutline[,1],montage$noseoutline[,2],lwd=2)
+lines(montage$Rearoutline[,1],montage$Rearoutline[,2],lwd=2)
+lines(montage$Learoutline[,1],montage$Learoutline[,2],lwd=2)
+
+```
+
+Then, the adjacency matrix is passed, along with our data, into the _clustercorrect_ function (note that the clustercorrect function uses functions from the _pracma_ package):
+
+```{r}
+library(pracma)
+dataforcc <- alltarget[,1:64,3]
+clusts <- clustercorrect(dataforcc,adjacencymatrix=adjacencymatrix,testtype=3,nresamples=1000)
+clusts
+
+```
+
+Cluster correction usually takes some time to run. Any significant clusters can then be plotted as follows:
+
+```{r}
+par(pty="s", mar=c(0,0,0,0))  # make axis square
+plot(x=NULL,y=NULL,axes=FALSE,ann=FALSE, xlim=c(-0.6,0.6), ylim=c(-0.6,0.6))
+
+for (n in 1:64){points(montage$electrodelocs[n,1],montage$electrodelocs[n,2],pch=16,col='grey')}
+
+if (clusts$nclusters>0){
+for (n in 1:clusts$nclusters){
+  toplot <- clusts$clusterpoints[[n]]
+  points(montage$electrodelocs[montage$channelmappings[toplot],1],montage$electrodelocs[montage$channelmappings[toplot],2],pch=16,col='blue')}}
+
+lines(montage$headoutline[,1],montage$headoutline[,2],lwd=2)
+lines(montage$noseoutline[,1],montage$noseoutline[,2],lwd=2)
+lines(montage$Rearoutline[,1],montage$Rearoutline[,2],lwd=2)
+lines(montage$Learoutline[,1],montage$Learoutline[,2],lwd=2)
+
+```
+
+Note that different EEG/MEG systems will have their own montages, which will require adjustment to this code.
+
+Daniel Baker 5/1/21

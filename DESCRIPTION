@@ -20,4 +20,7 @@ Imports:
   HDMD,
   Hotelling,
   pracma
-  
+Suggests: 
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
