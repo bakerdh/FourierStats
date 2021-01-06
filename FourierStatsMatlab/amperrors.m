@@ -61,51 +61,21 @@ if (method(1)=='e')
     % implements the method of Pei et al. (2017)
     % calculates the bounding ellipse for the data points
     % then uses this to find the nearest and farthest points from the origin
-    % these points are used as the lower and upper error bars    
+    % these points are used as the lower and upper error bars
     
-    [eigenvec,eigenval] = eig(cov(xydata));
-    % Get the index of the largest eigenvector
-    [largest_eigenvec_ind_c, r] = find(eigenval == max(max(eigenval)));
-    largest_eigenvec = eigenvec(:, largest_eigenvec_ind_c);
-    % Get the largest eigenvalue
-    largest_eigenval = max(max(eigenval));
-    % Get the smallest eigenvector and eigenvalue
-    if(largest_eigenvec_ind_c == 1)
-        smallest_eigenval = max(eigenval(:,2));
-        smallest_eigenvec = eigenvec(:,2);
-    else
-        smallest_eigenval = max(eigenval(:,1));
-        smallest_eigenvec = eigenvec(1,:);
-    end
-    % Calculate the angle between the x-axis and the largest eigenvector
-    angleL = atan2(largest_eigenvec(2), largest_eigenvec(1));
-    % This angle is between -pi and pi.
-    % Let's shift it such that the angle is between 0 and 2pi
-    if(angleL < 0)
-        angleL = angleL + 2*pi;
-    end
+    angles = linspace(0,2*pi,200);  % angles for ellipse
+    ctr = mean(xydata);
+    [eigVec,eigenval] = eig(cov(xydata));
+    eigVal = 1.96*eigenval/sqrt(length(xydata));
+    eigScl = eigVec * sqrt(eigVal);
+    xMat = [ctr(1) + eigScl(1,:); ctr(1) - eigScl(1,:)];
+    yMat = [ctr(2) + eigScl(2,:); ctr(2) - eigScl(2,:)];
+    ellBase = [sqrt(eigVal(2,2))*cos(angles); sqrt(eigVal(1,1))*sin(angles)]';
+    ellRot = eigVec(:,2:-1:1) * ellBase';   % invert order of eigenvectors as these are the opposite way round from in R
+    ellRot(1,:) = ellRot(1,:) + ctr(1);
+    ellRot(2,:) = ellRot(2,:) + ctr(2);
     
-    avg = [real(mean(compdata)) imag(mean(compdata))];
-    theta_grid = linspace(0,2*pi,200);  % angles for ellipse
-    phi = angleL;
-    X0=avg(1);
-    Y0=avg(2);
-    a=sqrt(largest_eigenval/length(compdata));
-    b=sqrt(smallest_eigenval/length(compdata));
-    
-    % the ellipse in x and y coordinates
-    ellipse_x_r  = a*cos(theta_grid);
-    ellipse_y_r  = b*sin(theta_grid);
-    
-    %Define a rotation matrix
-    R = [ cos(phi) sin(phi); -sin(phi) cos(phi) ];
-    
-    %let's rotate the ellipse to some angle phi
-    r_ellipse = [ellipse_x_r;ellipse_y_r]' * R;
-    
-    ellipsex = r_ellipse(:,1) + X0;
-    ellipsey = r_ellipse(:,2) + Y0;
-    totaldistfrom0 = sqrt(ellipsex.^2 + ellipsey.^2);
+    totaldistfrom0 = sqrt(ellRot(1,:).^2 + ellRot(2,:).^2);
     [n,i] = min(totaldistfrom0);
     [f,j] = max(totaldistfrom0);
     
@@ -113,8 +83,9 @@ if (method(1)=='e')
     output.upperCI = f;
     if quantiles==68
         output.lowerCI = ((output.lowerCI - output.meanamp)/1.96) + output.meanamp;
-        output.upperCI = ((output.upperCI - output.meanamp)/1.96) + output.meanamp;        
+        output.upperCI = ((output.upperCI - output.meanamp)/1.96) + output.meanamp;
     end
+    
 end
 
 
