@@ -24,7 +24,7 @@ CI.test <- function(data, alpha=0.05){
   cdfinverse <- 1-(cumsum(pdffunction)/sum(pdffunction)) # inverse of cdf
   criticalCI <- cilist[min(which(cdfinverse<=alpha))]  # find the threshold CI
 
-  pvals <- 0
+  pval <- 0
   indices <- which(cilist>=CI)  # find the CI values larger than our CI
   if (length(indices)>0){pval <- cdfinverse[indices[1]]} # estimate the p-value
 

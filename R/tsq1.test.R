@@ -21,7 +21,7 @@ tsq1.test <- function(data,mu=NULL){
   Fratio <- tsq * (N-m)/(m*(N-1)) # convert to F-ratio
   df1 <- m      # record degrees of freedom
   df2 <- N-m
-  pval <- 1- pf(Fratio,df1,df2) # estimate p-value
+  pval <- pf(Fratio,df1,df2,lower.tail=FALSE) # estimate p-value
   p.value <- min(pval,1)
 
   # store outputs in a data structure
