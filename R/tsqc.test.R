@@ -24,6 +24,7 @@ tsqc.test <- function(x,y=NULL,paired=FALSE,mu=NULL){
 
   if (paired==TRUE){if (is.null(y)==FALSE){x <- x - y}}
 
+  df1 <- 2
   # paired or one-sample version of the test
   if (paired==TRUE | is.null(y)){
 
@@ -36,7 +37,7 @@ tsqc.test <- function(x,y=NULL,paired=FALSE,mu=NULL){
     tsqc <- (nobs-1) * (absmean^2) / diffsumsq
     Fratio <- nobs*tsqc
     df2 <- nobs*2-2
-    pval <- pf(Fratio,df1=2,df2=df2,lower.tail=FALSE)
+    pval <- pf(Fratio,df1=df1,df2=df2,lower.tail=FALSE)
   }
 
   # independent samples version of the test
@@ -58,10 +59,9 @@ tsqc.test <- function(x,y=NULL,paired=FALSE,mu=NULL){
     tsqc <- (nobs1 + nobs2 - 2) * (absdiff^2) / diffsumsq
     Fratio <- ((nobs1*nobs2)/(nobs1 + nobs2))*tsqc
     df2 <- (2*nobs1 + 2*nobs2 - 4)
-    pval <- pf(Fratio,df1=2,df2=df2,lower.tail=FALSE)
+    pval <- pf(Fratio,df1=df1,df2=df2,lower.tail=FALSE)
   }
 
-  df1 <- 2
   p.value <- min(pval,1)
 
   output <- data.frame(tsqc,Fratio,df1,df2,p.value,method)
