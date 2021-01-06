@@ -30,12 +30,12 @@ amperrors <- function(input, method='boot',quantiles=95,nresamples=10000){
   if (method=='circ'){
     # pools the variance in the x (real) and y (imaginary) directions
     # calculates the standard error based on this estimate
-    sdcirc <- sqrt((sd(xydata[,2])^2 + sd(xydata[,2])^2)/2)
+    sdcirc <- sqrt((sd(xydata[,1])^2 + sd(xydata[,2])^2)/2)
     se <- sdcirc/sqrt(length(compdata))
     if (quantiles==95){ci <- 1.96*se}
     if (quantiles==68){ci <- se}
     output$upperCI <- output$meanamp + ci
-    output$lowerCI <- output$meanamp - ci
+    output$lowerCI <- max(output$meanamp - ci,0) # lower bound at 0
   }
 
   if (method=='ellipse'){
@@ -74,7 +74,7 @@ amperrors <- function(input, method='boot',quantiles=95,nresamples=10000){
     if (quantiles==95){ci <- 1.96*se}
     if (quantiles==68){ci <- se}
     output$upperCI <- output$meanamp + ci
-    output$lowerCI <- output$meanamp - ci
+    output$lowerCI <- max(output$meanamp - ci,0) # lower bound at 0
   }
 
 return(output)}
