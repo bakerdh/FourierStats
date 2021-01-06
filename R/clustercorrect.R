@@ -178,7 +178,7 @@ clustercorrect <- function(datax,datay=NULL,adjacencymatrix=NULL,testtype=1,pair
     }
 
     # compare each cluster to the null distribution, retain the significant ones
-    clusterps <- 0*(1:ccount)
+    clusterps <- 0*(1:ccount) + 1
     if (length(nulldist)==nresamples){
     for (cc in 1:ccount){
       i <- which(abs(nulldist)>abs(sumtvals[cc]))
