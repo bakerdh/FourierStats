@@ -18,7 +18,6 @@ Imports:
   stats,
   MANOVA.RM,
   HDMD,
-  Hotelling,
   pracma
 Suggests: 
     knitr,

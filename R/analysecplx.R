@@ -95,7 +95,7 @@ if (assumptionsmet==0 && ngroups<3){
   if (ngroups==1){
     message('Running a one-sample T-squared test')
     output$testtype <- 'One-sample T-squared test'
-    results <- tsq1.test(complexdata)
+    results <- tsqh.test(complexdata)
     message(paste('The test statistic T^2 =',round(results$tsq,digits=2)))
     message(paste('The equivalent F-ratio with',results$df1,'and',results$df2,'degrees of freedom is F =',round(results$Fratio,digits=2)))
     output$teststat <- results$tsq
@@ -110,19 +110,19 @@ if (assumptionsmet==0 && ngroups<3){
     if (isRM==0){
       message('Running an independent T-squared test')
       output$testtype <- 'Independent T-squared test'
-      results <- Hotelling::hotelling.test(x=data.frame(Re(dataA),Im(dataA)),y=data.frame(Re(dataB),Im(dataB)))
-      message(paste('The test statistic T^2 =',round(results$stats$statistic,digits=2)))
-      output$teststat <- results$stats$statistic
-      output$Fratio <- results$stats$statistic * results$stats$m
-      output$df1 <- results$stats$df[1]
-      output$df2 <- results$stats$df[2]
-      output$p.value <- results$pval
-      message(paste('The equivalent F-ratio with',output$df1,'and',output$df2,'degrees of freedom is F =',round(output$Fratio,digits=2)))
+      results <- tsqh.test(dataA,dataB)
+      output$teststat <- results$tsq
+      output$Fratio <- results$Fratio
+      output$df1 <- results$df1
+      output$df2 <- results$df2
+      output$p.value <- results$p.value
+      message(paste('The test statistic T^2 =',round(results$tsq,digits=2)))
+      message(paste('The equivalent F-ratio with',results$df1,'and',results$df2,'degrees of freedom is F =',round(results$Fratio,digits=2)))
     }
     if (isRM==1){
       message('Running a repeated measures T-squared test')
       output$testtype <- 'Repeated measures T-squared test'
-      results <- tsq1.test(dataA-dataB)   # take the difference between groups and run a 1 sample test
+      results <- tsqh.test(dataA-dataB)   # take the difference between groups and run a 1 sample test
       message(paste('The test statistic T^2 =',round(results$tsq,digits=2)))
       message(paste('The equivalent F-ratio with',results$df1,'and',results$df2,'degrees of freedom is F =',round(results$Fratio,digits=2)))
       output$teststat <- results$tsq
@@ -167,6 +167,7 @@ if (assumptionsmet==0 && ngroups>2){
     }
   output$teststat <- results$MATS
   output$p.value <- results$resampling[2]
+  message(paste('The Modified ANOVA-like Test Statistic is',round(results$MATS,digits=2)))
 }
 
 if (output$p.value<0.05){message('The test was significant at p < 0.05')}

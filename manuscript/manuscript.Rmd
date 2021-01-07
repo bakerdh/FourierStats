@@ -226,7 +226,7 @@ where $x_j$ denotes the $j$th observation of the dependent variables, and all ot
 
 In the present paper, best practice guidelines are developed for performing statistical tests on multivariate Fourier components derived from periodic stimulation paradigms. It is first demonstrated why parametric univariate statistics are inappropriate for such data, because amplitudes for weak signals are not normally distributed. Then conditions are investigated under which either the $T^2$ or $T^2_{circ}$ statistic should be used. The range of sample sizes and effect sizes where $T^2_{circ}$ is more sensitive is identified. A novel method for testing the assumptions of the $T^2_{circ}$ statistic is developed, based on calculating the condition index of a multivariate data set. Appropriate methods for identifying outliers using the Mahalanobis distance are discussed, and a heuristic proposed. Next the logic of $T^2_{circ}$ is extended to situations with more than two levels of the independent variable, and the performance of this novel $ANOVA^2_{circ}$ statistic is compared to MANOVA. Finally, the proposed techniques are demonstrated on two example data sets (from mice and humans), and best practice guidelines are recommended for analysis decisions.
 
-All scripts used to generate this manuscript are available at: [https://github.com/bakerdh/FourierStats](https://github.com/bakerdh/FourierStats). This includes a _Matlab_ toolbox and an _R_ package called _FourierStats_, featuring functions to implement a one-sample Hotelling's [-@Hotelling1931] $T^2$ statistic, Victor & Mast's [-@Victor1991] $T^2_{circ}$ statistic, and the condition index and $ANOVA^2_{circ}$ statistics proposed in this paper.
+All scripts used to generate this manuscript are available at: [https://github.com/bakerdh/FourierStats](https://github.com/bakerdh/FourierStats). This includes a _Matlab_ toolbox and an _R_ package called _FourierStats_, featuring functions to implement Hotelling's [-@Hotelling1931] $T^2$ statistic, Victor & Mast's [-@Victor1991] $T^2_{circ}$ statistic, and the condition index and $ANOVA^2_{circ}$ statistics proposed in this paper.
 
 # Fourier amplitudes violate parametric assumptions of univariate statistics
 
@@ -300,7 +300,7 @@ for (n in 1:nsims){
     for (s2 in 1:length(dlist)){
     data <- matrix(rnorm(2*samplesizes[s]),nrow=samplesizes[s],ncol=2)
     data[,1] <- data[,1] + dlist[s2]
-    a <- tsq1.test(data)
+    a <- tsqh.test(data)
     if (a[5]<0.05){tsqmatrix[s,s2] <- tsqmatrix[s,s2] + 1}
     a <- tsqc.test(data)
     if (a[5]<0.05){circmatrix[s,s2] <- circmatrix[s,s2] + 1}
@@ -431,7 +431,7 @@ for (cond in 1:length(corvals)){
     simdata[,2] <- ydata
     output <- tsqc.test(simdata,paired=FALSE)
     if (output$p.value < 0.05){csig[cond] <- csig[cond] + 1}
-    output <- tsq1.test(simdata)
+    output <- tsqh.test(simdata)
     if (output$p.value < 0.05){hsig[cond] <- hsig[cond] + 1}
   }}
 propc <- csig/nsims
@@ -506,7 +506,7 @@ for (cond in 1:length(corvals)){
     
     output <- tsqc.test(simdata,paired=FALSE)
     if (output$p.value < 0.05){csig[cond] <- csig[cond] + 1}
-    output <- tsq1.test(simdata)
+    output <- tsqh.test(simdata)
     if (output$p.value < 0.05){hsig[cond] <- hsig[cond] + 1}
   }}
 propc <- csig/nsims
