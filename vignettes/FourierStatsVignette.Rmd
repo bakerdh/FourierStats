@@ -54,7 +54,7 @@ tsqc.test(data)
 Or a one-sample $T^2$ test as follows:
 
 ```{r}
-tsq1.test(data)
+tsqh.test(data)
 
 ```
 
@@ -65,7 +65,7 @@ tsqc.test(alltarget[,31,1],alltarget[,31,7],paired=TRUE)
 
 ```
 
-Note that a two-sample independent Hotelling's $T^2$ test is included in the _Hotelling_ package (_hotelling.test_ function). A repeated measures (paired) test can be conducted by subtracting the conditions and running a one-sample test (this is mathematically equivalent).
+The _tsqc.test_ and _tsqh.test_ functions can run one-sample, two-sample and paired versions of the two tests.
 
 To run a repeated measures $ANOVA^2_{circ}$ test on all 7 conditions, we would first restructure the data (using the _melt_ function from the _reshape2_ package), and create some group and participant labels, before calling the _anovacirc.test_ function:
 

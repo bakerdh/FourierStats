@@ -77,7 +77,7 @@ for n = 1:m
                 allp(n) = p;
                 allt(n) = output.tstat;
             case 2  % one-sample Hotelling's t-squared
-                output = tsq1_test(datax(:,n));
+                output = tsqh_test(datax(:,n));
                 allp(n) = output.pval;
                 allt(n) = output.tsq;
             case 3  % one-sample T-squared-circ
@@ -95,7 +95,9 @@ for n = 1:m
                 allp(n) = p;
                 allt(n) = output.tstat;
             case 2  % two sample Hotelling's t-squared
-                
+                output = tsqh_test(datax(:,n),datay(:,n));
+                allp(n) = output.pval;
+                allt(n) = output.tsq;                
             case 3  % two-sample T-squared-circ
                 output = tsqc_test(datax(:,n),datay(:,n));
                 allp(n) = output.pval;
@@ -185,7 +187,7 @@ if (nclusters>0)
                             [h,p,ci,output] = ttest(tempdataA);
                             tsum = tsum + output.tstat;
                         case 2  % one-sample Hotelling's t-squared
-                            output = tsq1_test(tempdataA);
+                            output = tsqh_test(tempdataA);
                             tsum = tsum + output.tsq;
                         case 3  % one-sample T-squared-circ
                             output = tsqc_test(tempdataA);
@@ -202,7 +204,8 @@ if (nclusters>0)
                             [h,p,ci,output] = ttest2(tempdataA,tempdataB);
                             tsum = tsum + output.tstat;
                         case 2  % two sample Hotelling's t-squared
-                            
+                            output = tsqh_test(tempdataA,tempdataB);
+                            tsum = tsum + output.tsq;
                         case 3  % two-sample T-squared-circ
                             output = tsqc_test(tempdataA,tempdataB);
                             tsum = tsum + output.tsqc;

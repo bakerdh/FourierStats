@@ -61,3 +61,17 @@ input <- data.frame(xy,group,participant)
 analysecplx(input)
 
 
+
+
+
+N <- 10
+
+x <- rnorm(N)
+y <- rnorm(N)
+xy1 <- complex(real=x,imaginary=y)
+x <- rnorm(N)
+y <- rnorm(N)
+xy2 <- complex(real=x,imaginary=y)
+
+tsqh.test(xy1,xy2)
+h <- Hotelling::hotelling.test(x=data.frame(Re(xy1),Im(xy1)),y=data.frame(Re(xy2),Im(xy2)))

@@ -55,7 +55,7 @@ clustercorrect <- function(datax,datay=NULL,adjacencymatrix=NULL,testtype=1,pair
         allp[n] <- output$p.value
         allt[n] <- output$statistic}
       if (testtype==2){
-        output <- tsq1.test(datax[,n])  # one-sample Hotelling's t-squared
+        output <- tsqh.test(datax[,n])  # one-sample Hotelling's t-squared
         allp[n] <- output$p.value
         allt[n] <- output$tsq}
       if (testtype==3){
@@ -71,9 +71,9 @@ clustercorrect <- function(datax,datay=NULL,adjacencymatrix=NULL,testtype=1,pair
         allp[n] <- output$p.value
         allt[n] <- output$statistic}
       if (testtype==2){
-        output <- Hotelling::hotelling.test(data.frame(Re(datax[,n]),Im(datax[,n])),data.frame(Re(datay[,n]),Im(datay[,n])))  #independent Hotelling's T-squared
-        allp[n] <- output$pval
-        allt[n] <- output$stats$statistic}
+        output <- tsqh.test(datax[,n],datay[,n],paired=FALSE)  # independent T-squared
+        allp[n] <- output$p.value
+        allt[n] <- output$tsq}
       if (testtype==3){
         output <- tsqc.test(datax[,n],datay[,n],paired=FALSE)  # independent T-squared-circ
         allp[n] <- output$p.value
@@ -151,7 +151,7 @@ clustercorrect <- function(datax,datay=NULL,adjacencymatrix=NULL,testtype=1,pair
             output <- t.test(tempdataA)
             tsum <- tsum + output$statistic}
           if (testtype==2){
-            output <- tsq1.test(tempdataA)
+            output <- tsqh.test(tempdataA)
             tsum <- tsum + output$tsq}
           if (testtype==3){
             output <- tsqc.test(tempdataA)
@@ -166,8 +166,8 @@ clustercorrect <- function(datax,datay=NULL,adjacencymatrix=NULL,testtype=1,pair
             output <- t.test(tempdataA,tempdataB)
             tsum <- tsum + output$statistic}
           if (testtype==2){
-            output <- Hotelling::hotelling.test(data.frame(Re(tempdataA),Im(tempdataA)),data.frame(Re(tempdataB),Im(tempdataB)))
-            tsum <- tsum + output$stats$statistic}
+            output <- tsqh.test(tempdataA,tempdataB,paired=FALSE)
+            tsum <- tsum + output$tsq}
           if (testtype==3){
             output <- tsqc.test(tempdataA,tempdataB,paired=FALSE)
             tsum <- tsum + output$tsqc}
