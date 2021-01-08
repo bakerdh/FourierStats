@@ -430,9 +430,9 @@ for (cond in 1:length(corvals)){
     simdata[,1] <- xdata
     simdata[,2] <- ydata
     output <- tsqc.test(simdata,paired=FALSE)
-    if (output$p.value < 0.05){csig[cond] <- csig[cond] + 1}
+    if (output$pval < 0.05){csig[cond] <- csig[cond] + 1}
     output <- tsqh.test(simdata)
-    if (output$p.value < 0.05){hsig[cond] <- hsig[cond] + 1}
+    if (output$pval < 0.05){hsig[cond] <- hsig[cond] + 1}
   }}
 propc <- csig/nsims
 lines(corvals,propc,lty=1,lwd=4,col=nbdtpal[2])
@@ -505,9 +505,9 @@ for (cond in 1:length(corvals)){
     simdata[,2] <- ydata
     
     output <- tsqc.test(simdata,paired=FALSE)
-    if (output$p.value < 0.05){csig[cond] <- csig[cond] + 1}
+    if (output$pval < 0.05){csig[cond] <- csig[cond] + 1}
     output <- tsqh.test(simdata)
-    if (output$p.value < 0.05){hsig[cond] <- hsig[cond] + 1}
+    if (output$pval < 0.05){hsig[cond] <- hsig[cond] + 1}
   }}
 propc <- csig/nsims
 lines(corvals,propc,lty=1,lwd=4,col=nbdtpal[2])
@@ -794,7 +794,7 @@ for (n in 1:nsims){
   simdata <- complex(real=data[,1],imaginary=data[,2])
   
   output <- anovacirc.test(data.frame(simdata,grouplabels))
-  if (output$p.value<0.05){circmatrix[s,s2] <- circmatrix[s,s2] + 1}
+  if (output$pval<0.05){circmatrix[s,s2] <- circmatrix[s,s2] + 1}
 
 dataforManova <- data.frame(grouplabels,data[,1],data[,2])    
 colnames(dataforManova) <- c("Group","Real","Imaginary")
@@ -1077,7 +1077,7 @@ D <- sqrt(mahala_sq$distance[1,2])
 
 ```
 
-Figure \@ref(fig:mousedata)a shows Fourier amplitude spectra at two frontal electrodes (marked black in the insets) for auditory stimulation (red) and optogenetic stimulation (blue), each at 40 Hz. There is a clear frequency-locked signal with approximately equal amplitude for each stimulation modality. Indeed, a paired univariate T-test on the amplitudes reveals no significant difference (_t_ = `r round(tresult$statistic,digits=2)`, _df_ = `r tresult$parameter`, _p_ = `r round(tresult$p.value,digits=2)`). However, inspection of the complex Fourier components for each condition suggests evidence of a phase difference between the two modalities (see Figure \@ref(fig:mousedata)b). The condition index test was non-significant for both conditions (sound: CI = `r round(cisound$CI,digits=2)`, _p_ = `r round(cisound$pval,digits=2)`; light: CI = `r round(cilight$CI,digits=2)`, _p_ = `r round(cilight$pval,digits=2)`), so a paired-samples $T^2_{circ}$ test was conducted. This revealed a significant difference between conditions ($T^2_{circ}$ = `r round(tsqcresult$tsqc,digits=2)`, $F_{(`r tsqcresult$df1`,`r tsqcresult$df2`)}$ = `r round(tsqcresult$Fratio,digits=2)`, _p_ = `r round(tsqcresult$p.value,digits=3)`) with an effect size of _D_ = `r round(D,digits=2)`. This demonstrates that both sound and (optogenetic) light are able to entrain neural responses - the original study by Hwang et al. [-@Hwang2019] went on to explore interactions between these two signals.
+Figure \@ref(fig:mousedata)a shows Fourier amplitude spectra at two frontal electrodes (marked black in the insets) for auditory stimulation (red) and optogenetic stimulation (blue), each at 40 Hz. There is a clear frequency-locked signal with approximately equal amplitude for each stimulation modality. Indeed, a paired univariate T-test on the amplitudes reveals no significant difference (_t_ = `r round(tresult$statistic,digits=2)`, _df_ = `r tresult$parameter`, _p_ = `r round(tresult$pval,digits=2)`). However, inspection of the complex Fourier components for each condition suggests evidence of a phase difference between the two modalities (see Figure \@ref(fig:mousedata)b). The condition index test was non-significant for both conditions (sound: CI = `r round(cisound$CI,digits=2)`, _p_ = `r round(cisound$pval,digits=2)`; light: CI = `r round(cilight$CI,digits=2)`, _p_ = `r round(cilight$pval,digits=2)`), so a paired-samples $T^2_{circ}$ test was conducted. This revealed a significant difference between conditions ($T^2_{circ}$ = `r round(tsqcresult$tsqc,digits=2)`, $F_{(`r tsqcresult$df1`,`r tsqcresult$df2`)}$ = `r round(tsqcresult$Fratio,digits=2)`, _p_ = `r round(tsqcresult$pval,digits=3)`) with an effect size of _D_ = `r round(D,digits=2)`. This demonstrates that both sound and (optogenetic) light are able to entrain neural responses - the original study by Hwang et al. [-@Hwang2019] went on to explore interactions between these two signals.
 
 ## Human visual steady-state data
 
@@ -1228,7 +1228,7 @@ colnames(alltsq) <- colnames(tsqc.test(set1,set2,paired=TRUE))
 
 ```
 
-With the outlier points removed, all seven conditions resulted in non-significant condition index tests (largest CI = `r format(round(max(allCI),digits=2),nsmall=2)`, all _p_ > `r round(min(allCIp),digits=2)`). A repeated measures $ANOVA^2_{circ}$ test was conducted, revealing a significant effect of stimulus contrast ($F_{(`r withincirc$dfM`,`r withincirc$dfR`)}$ = `r round(withincirc$Fratio,digits=1)`, _p_ < `r max(round(withincirc$p.value,digits=3),0.001)`). Pairwise $T^2_{circ}$ statistics comparing the baseline (0% contrast) condition to each subsequent condition (Bonferroni corrected for 6 tests to $\alpha = 0.08$) revealed significant differences at 8% contrast ($T^2_{circ}$ = `r format(round(alltsq$tsqc[3],digits=2),nsmall=2)`, $F_{(2,176)}$ = `r round(alltsq$Fratio[3],digits=2)`, _D_ = `r round(allD[3],digits=2)`, _p_ < 0.001), 16% contrast ($T^2_{circ}$ = `r format(round(alltsq$tsqc[4],digits=2),nsmall=2)`, $F_{(2,176)}$ = `r round(alltsq$Fratio[4],digits=2)`, _D_ = `r round(allD[4],digits=2)`, _p_ < 0.001), 32% contrast ($T^2_{circ}$ = `r format(round(alltsq$tsqc[5],digits=2),nsmall=2)`, $F_{(2,176)}$ = `r round(alltsq$Fratio[5],digits=2)`, _D_ = `r round(allD[5],digits=2)`, _p_ < 0.001) and 64% contrast ($T^2_{circ}$ = `r format(round(alltsq$tsqc[6],digits=2),nsmall=2)`, $F_{(2,176)}$ = `r round(alltsq$Fratio[6],digits=2)`, _D_ = `r round(allD[6],digits=2)`, _p_ < 0.001). The study by Vilidaite et al. [-@Vilidaite2018] compared SSVEP responses between individuals with and without autism, as well as in a _Drosophila_ genetic model of developmental disorders. The raw data are available at: [http://dx.doi.org/10.17605/OSF.IO/Y4N5K](http://dx.doi.org/10.17605/OSF.IO/Y4N5K), and a processed version is included with the [_FourierStats_](https://github.com/bakerdh/FourierStats) package.
+With the outlier points removed, all seven conditions resulted in non-significant condition index tests (largest CI = `r format(round(max(allCI),digits=2),nsmall=2)`, all _p_ > `r round(min(allCIp),digits=2)`). A repeated measures $ANOVA^2_{circ}$ test was conducted, revealing a significant effect of stimulus contrast ($F_{(`r withincirc$dfM`,`r withincirc$dfR`)}$ = `r round(withincirc$Fratio,digits=1)`, _p_ < `r max(round(withincirc$pval,digits=3),0.001)`). Pairwise $T^2_{circ}$ statistics comparing the baseline (0% contrast) condition to each subsequent condition (Bonferroni corrected for 6 tests to $\alpha = 0.08$) revealed significant differences at 8% contrast ($T^2_{circ}$ = `r format(round(alltsq$tsqc[3],digits=2),nsmall=2)`, $F_{(2,176)}$ = `r round(alltsq$Fratio[3],digits=2)`, _D_ = `r round(allD[3],digits=2)`, _p_ < 0.001), 16% contrast ($T^2_{circ}$ = `r format(round(alltsq$tsqc[4],digits=2),nsmall=2)`, $F_{(2,176)}$ = `r round(alltsq$Fratio[4],digits=2)`, _D_ = `r round(allD[4],digits=2)`, _p_ < 0.001), 32% contrast ($T^2_{circ}$ = `r format(round(alltsq$tsqc[5],digits=2),nsmall=2)`, $F_{(2,176)}$ = `r round(alltsq$Fratio[5],digits=2)`, _D_ = `r round(allD[5],digits=2)`, _p_ < 0.001) and 64% contrast ($T^2_{circ}$ = `r format(round(alltsq$tsqc[6],digits=2),nsmall=2)`, $F_{(2,176)}$ = `r round(alltsq$Fratio[6],digits=2)`, _D_ = `r round(allD[6],digits=2)`, _p_ < 0.001). The study by Vilidaite et al. [-@Vilidaite2018] compared SSVEP responses between individuals with and without autism, as well as in a _Drosophila_ genetic model of developmental disorders. The raw data are available at: [http://dx.doi.org/10.17605/OSF.IO/Y4N5K](http://dx.doi.org/10.17605/OSF.IO/Y4N5K), and a processed version is included with the [_FourierStats_](https://github.com/bakerdh/FourierStats) package.
 
 # Further considerations
 

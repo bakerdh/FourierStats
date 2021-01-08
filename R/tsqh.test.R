@@ -67,9 +67,9 @@ tsqh.test <- function(x,y=NULL,paired=FALSE,mu=NULL){
 
   }
 
-  p.value <- min(pval,1)
+  pval <- min(pval,1)
 
   # store outputs in a data structure
-  output <- data.frame(tsq,Fratio,df1,df2,p.value,method)
+  output <- data.frame(tsq,Fratio,df1,df2,pval,method)
 
   return(output)}

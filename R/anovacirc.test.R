@@ -60,9 +60,9 @@ anovacirc.test <- function(data, group=NULL, participant=NULL){
   MSM <- SSM/dfM
   MSR <- SSR/dfR
   Fratio <- MSM/MSR
-  p.value <- pf(Fratio,df1=dfM,df2=dfR,lower.tail=FALSE)
+  pval <- pf(Fratio,df1=dfM,df2=dfR,lower.tail=FALSE)
 
-  output <- data.frame(Fratio,p.value,SSM,SSR,dfM,dfR,MSM,MSR)
+  output <- data.frame(Fratio,pval,SSM,SSR,dfM,dfR,MSM,MSR)
 }
 
   # if participant labels have been supplied, run a repeated measures ANOVA-circ
@@ -86,9 +86,9 @@ anovacirc.test <- function(data, group=NULL, participant=NULL){
   MSM <- SSM/dfM
   MSR <- SSR/dfR
   Fratio <- MSM/MSR
-  p.value <- pf(Fratio,df1=dfM,df2=dfR,lower.tail=FALSE)
+  pval <- pf(Fratio,df1=dfM,df2=dfR,lower.tail=FALSE)
 
-  output <- data.frame(Fratio,p.value,SSW,SSM,SSR,dfW,dfM,dfR,MSM,MSR)
+  output <- data.frame(Fratio,pval,SSW,SSM,SSR,dfW,dfM,dfR,MSM,MSR)
   }
 
   return(output)

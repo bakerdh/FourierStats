@@ -87,7 +87,7 @@ if (assumptionsmet==1 && ngroups<3){
   output$Fratio <- results$Fratio
   output$df1 <- results$df1
   output$df2 <- results$df2
-  output$p.value <- results$p.value
+  output$pval <- results$pval
 }
 
 # run T-squared
@@ -102,7 +102,7 @@ if (assumptionsmet==0 && ngroups<3){
     output$Fratio <- results$Fratio
     output$df1 <- results$df1
     output$df2 <- results$df2
-    output$p.value <- results$p.value
+    output$pval <- results$pval
     }
   if (ngroups>1){
     dataA <- complexdata[which(grouplabels==factorlist[1])]
@@ -115,7 +115,7 @@ if (assumptionsmet==0 && ngroups<3){
       output$Fratio <- results$Fratio
       output$df1 <- results$df1
       output$df2 <- results$df2
-      output$p.value <- results$p.value
+      output$pval <- results$pval
       message(paste('The test statistic T^2 =',round(results$tsq,digits=2)))
       message(paste('The equivalent F-ratio with',results$df1,'and',results$df2,'degrees of freedom is F =',round(results$Fratio,digits=2)))
     }
@@ -129,7 +129,7 @@ if (assumptionsmet==0 && ngroups<3){
       output$Fratio <- results$Fratio
       output$df1 <- results$df1
       output$df2 <- results$df2
-      output$p.value <- results$p.value
+      output$pval <- results$pval
       }
   }
 }
@@ -145,7 +145,7 @@ if (assumptionsmet==1 && ngroups>2){
     output$Fratio <- results$Fratio
     output$df1 <- results$dfM
     output$df2 <- results$dfR
-    output$p.value <- results$p.value
+    output$pval <- results$pval
 }
 
 # run MANOVA
@@ -165,13 +165,13 @@ if (assumptionsmet==0 && ngroups>2){
     results <- MANOVA.RM::multRM(cbind(dataforManova$Real, dataforManova$Imaginary) ~ Group, data=dataforManova, subject="Participant", within="Group")
     output$testtype <- 'Repeated measures MANOVA'
     }
-  output$teststat <- results$MATS
-  output$p.value <- results$resampling[2]
+  output$teststat <- as.numeric(results$MATS)
+  output$pval <- results$resampling[2]
   message(paste('The Modified ANOVA-like Test Statistic is',round(results$MATS,digits=2)))
 }
 
-if (output$p.value<0.05){message('The test was significant at p < 0.05')}
-if (output$p.value>=0.05){message('The test was not significant at p < 0.05')}
+if (output$pval<0.05){message('The test was significant at p < 0.05')}
+if (output$pval>=0.05){message('The test was not significant at p < 0.05')}
 
 if (ngroups==1){
   # calculate pointwise Mahalanobis distance relative to the origin
