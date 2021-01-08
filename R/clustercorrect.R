@@ -56,11 +56,11 @@ clustercorrect <- function(datax,datay=NULL,adjacencymatrix=NULL,testtype=1,pair
         allt[n] <- output$statistic}
       if (testtype==2){
         output <- tsqh.test(datax[,n])  # one-sample Hotelling's t-squared
-        allp[n] <- output$p.value
+        allp[n] <- output$pval
         allt[n] <- output$tsq}
       if (testtype==3){
         output <- tsqc.test(datax[,n])  # T-squared-circ
-        allp[n] <- output$p.value
+        allp[n] <- output$pval
         allt[n] <- output$tsqc}
     }
 
@@ -72,11 +72,11 @@ clustercorrect <- function(datax,datay=NULL,adjacencymatrix=NULL,testtype=1,pair
         allt[n] <- output$statistic}
       if (testtype==2){
         output <- tsqh.test(datax[,n],datay[,n],paired=FALSE)  # independent T-squared
-        allp[n] <- output$p.value
+        allp[n] <- output$pval
         allt[n] <- output$tsq}
       if (testtype==3){
         output <- tsqc.test(datax[,n],datay[,n],paired=FALSE)  # independent T-squared-circ
-        allp[n] <- output$p.value
+        allp[n] <- output$pval
         allt[n] <- output$tsqc}
     }
   }
@@ -178,7 +178,7 @@ clustercorrect <- function(datax,datay=NULL,adjacencymatrix=NULL,testtype=1,pair
     }
 
     # compare each cluster to the null distribution, retain the significant ones
-    clusterps <- 0*(1:ccount) + 1
+    clusterps <- 0*(1:ccount)
     if (length(nulldist)==nresamples){
     for (cc in 1:ccount){
       i <- which(abs(nulldist)>abs(sumtvals[cc]))

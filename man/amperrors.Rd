@@ -6,27 +6,29 @@
 the input is a vector of complex numbers, or an Nx2 matrix of real and imaginary components
 the optional 'method' flag allows the following values:
 \itemize{
-\item 'boot': (default) bootstraps the confidence intervals (10000 iterations)
+\item 'boot': (default) bootstraps the confidence intervals
 \item 'circ': calculates confidence intervals based on a circular bounding region (used when the condition index test is non-significant)
 \item 'ellipse': calculates confidence intervals based on an elliptical bounding region (based on Pei et al. 2017, doi: 10.1016/j.visres.2016.03.010)
 \item 'abs': calculates the standard error (and the mean) using the absolute amplitudes
 the optional 'quantiles' flag allows the quantile to be set for the confidence intervals
+the optional 'nresamples' variable allows the number of iterations to be determined for the bootstrapping option (ignored for other methods)
 typical values are 95 (for 95\% confidence intervals), and 68 (for standard errors)
 the function returns the mean amplitude and the upper and lower error bars
 }}
 \usage{
-amperrors(input, method = "boot", quantiles = 95)
+amperrors(input, method = "boot", quantiles = 95, nresamples = 10000)
 }
 \description{
 amperrors: calculate error bars on the amplitude component of coherently averaged data
 the input is a vector of complex numbers, or an Nx2 matrix of real and imaginary components
 the optional 'method' flag allows the following values:
 \itemize{
-\item 'boot': (default) bootstraps the confidence intervals (10000 iterations)
+\item 'boot': (default) bootstraps the confidence intervals
 \item 'circ': calculates confidence intervals based on a circular bounding region (used when the condition index test is non-significant)
 \item 'ellipse': calculates confidence intervals based on an elliptical bounding region (based on Pei et al. 2017, doi: 10.1016/j.visres.2016.03.010)
 \item 'abs': calculates the standard error (and the mean) using the absolute amplitudes
 the optional 'quantiles' flag allows the quantile to be set for the confidence intervals
+the optional 'nresamples' variable allows the number of iterations to be determined for the bootstrapping option (ignored for other methods)
 typical values are 95 (for 95\% confidence intervals), and 68 (for standard errors)
 the function returns the mean amplitude and the upper and lower error bars
 }

@@ -62,7 +62,7 @@ tsqc.test <- function(x,y=NULL,paired=FALSE,mu=NULL){
     pval <- pf(Fratio,df1=df1,df2=df2,lower.tail=FALSE)
   }
 
-  p.value <- min(pval,1)
+  pval <- min(pval,1)
 
-  output <- data.frame(tsqc,Fratio,df1,df2,p.value,method)
+  output <- data.frame(tsqc,Fratio,df1,df2,pval,method)
   return(output)}
