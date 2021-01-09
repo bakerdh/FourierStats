@@ -6,20 +6,27 @@ function output = tsqc_test(x,y,paired,mu)
 % for a two-sample test, x and y are the data from the two conditions
 % if paired=1, the matrices (x and y) must be the same size
 % the output is a structure containing the test results
+% this function is part of the FourierStats package: https://github.com/bakerdh/FourierStats
 
 d = size(x);
 if (d(1)<d(2))
     x = x';
 end
+if (~isempty(y))
 d = size(y);
 if (d(1)<d(2))
     y = y';
+end
 end
 
 if (~isempty(mu))
     for n = 1:length(mu)
         x(:,n) = x(:,n) - mu(n);
     end
+end
+
+if (isempty(paired))
+    paired = 0;
 end
 
 if isreal(x)
@@ -32,13 +39,13 @@ if (~isempty(y))
 end
 
 if (isempty(y))
-    method = 'One-sample t-squared circ test';
+    method = 'One-sample T-squared circ test';
 end
 if (~isempty(y) && paired==1)
-    method = 'Paired t-squared circ test';
+    method = 'Paired samples T-squared circ test';
 end
 if (~isempty(y) && paired==0)
-    method = 'Independent samples t-squared circ test';
+    method = 'Independent samples T-squared circ test';
 end
 
 if (paired==1)

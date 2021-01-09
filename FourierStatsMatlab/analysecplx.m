@@ -16,6 +16,7 @@ function output = analysecplx(data, group, participant)
 % if the condition index test is significant for any level, a T-squared test or MANOVA is run instead
 % if participant labels are included, a repeated measures test is conducted
 % the Mahalanobis distance effect size statistic (D) is also calculated
+% this function is part of the FourierStats package: https://github.com/bakerdh/FourierStats
 
 grouplabels = [];
 participantlabels = [];
@@ -23,9 +24,9 @@ participantlabels = [];
 s = size(data);
 
 if (~isreal(data(1)))
-    datavals = data;
+    complexdata = data;
 else
-    datavals = complex(data(:,1),data(:,2));
+    complexdata = complex(data(:,1),data(:,2));
     
     if (s(2)>2)
         grouplabels = data(:,3);
@@ -56,7 +57,7 @@ factorlist = unique(grouplabels);
 ngroups = length(factorlist);
 nobservations = length(complexdata);
 
-disp(strcat('Design has ',num2str(ngroups),' levels, with ',numstr(nobservations/ngroups),' observations per level'));
+disp(strcat('Design has ',num2str(ngroups),' levels, with ',num2str(nobservations/ngroups),' observations per level'));
 if (isRM==1)
     disp('Design is repeated measures');
 end
@@ -66,8 +67,8 @@ end
 CIresults = zeros(ngroups,4);
 for n = 1:ngroups
     i = find(grouplabels==factorlist(n));
-    temp = CI_test(complexdata(i));
-    CIresults = [temp.CI temp.N temp.criticalCI temp.pval];
+    temp = CI_test(complexdata(i),[]);
+    CIresults(n,:) = [temp.CI temp.N temp.criticalCI temp.pval];
 end
 nsigCI = length(find(CIresults(:,4)<(0.05/ngroups)));
 disp(strcat('The condition index was significant for ',num2str(nsigCI),' out of ',num2str(ngroups),' levels'));
@@ -112,7 +113,7 @@ if (assumptionsmet==0 && ngroups<3)
     if (ngroups==1)
         disp('Running a one-sample T-squared test');
         output.testtype = 'One-sample T-squared test';
-        results = tsqh.test(complexdata);
+        results = tsqh_test(complexdata,[],[],[]);
         disp(strcat('The test statistic T^2 = ',num2str(results.tsq,2)));
         disp(strcat('The equivalent F-ratio with ',num2str(results.df1),' and ',num2str(results.df2),' degrees of freedom is F = ',num2str(results.Fratio,2)));
         output.teststat = results.tsq;
@@ -131,7 +132,7 @@ if (assumptionsmet==0 && ngroups<3)
             disp('Running a repeated measures T-squared-test');
             output.testtype = 'Repeated measures T-squared test';
         end
-        results = tsqh.test(dataA,dataB,isRM);
+        results = tsqh_test(dataA,dataB,isRM,[]);
         disp(strcat('The test statistic T^2 = ',num2str(results.tsq,2)));
         disp(strcat('The equivalent F-ratio with ',num2str(results.df1),' and ',num2str(results.df2),' degrees of freedom is F = ',num2str(results.Fratio,2)));
         output.teststat = results.tsq;
@@ -166,14 +167,16 @@ if (assumptionsmet==0 && ngroups>2)
     if (isRM==0)
         disp('Running an independent MANOVA');
         output.testtype = 'Independent MANOVA (test statistic is Wilks Lambda)';
-        data = [real(complexdata); imag(complexdata)]';
+        data = [real(complexdata) imag(complexdata)];
         [D,P,STATS] = manova1(data,grouplabels);
-        output.teststat = STATS.lambda;
+        output.teststat = STATS.lambda(1);
         output.pval = P(1);
     else
         % repeated measures MANOVA not properly implemented
         disp('Data set requires repeated measures MANOVA, which is not available in Matlab');
         disp('Consider using the R version of this toolbox (or SPSS) for this analysis');
+        output.teststat = 0;
+        output.pval = 1;
     end
     
 end
@@ -186,18 +189,16 @@ else
 end
 
 
-temp = [real(complexdata); imag(complexdata)]';
+temp = [real(complexdata) imag(complexdata)];
 if (ngroups==1)
     % calculate pointwise Mahalanobis distance relative to the origin
-    D = sqrt(mahal([0,0],temp));
+    D = sqrt(mahal([0 0],temp));
 else
     % calculate pairwise Mahalanobis distance between each pair of conditions
-    % this actually uses the manova1 function
-    [D,P,STATS] = manova1(temp,grouplabels);   % the gmdist field contains pairwise Mahalanobis statistics
-    D = max(STATS.gmdist);   % return the largest effect size
+    pmah = pairwisemahal(temp,grouplabels);
+    D = max(pmah.D(:));
 end
 disp(strcat('The effect size (Mahalanobis distance) is D = ',num2str(D,2)));
 output.D = D;
-
 
 end

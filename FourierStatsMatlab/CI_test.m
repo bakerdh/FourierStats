@@ -10,13 +10,19 @@ function output = CI_test(data,alpha)
 % the index is then compared for significance with an expected distribution function
 % significant tests (p < alpha) violate the assumptions of the T-squared-circ and ANOVA-squared-circ tests
 % see Baker (2021) for further details
+% this function is part of the FourierStats package: https://github.com/bakerdh/FourierStats
 
 if (isempty(alpha))
     alpha = 0.05;
 end
 
+d = size(data);
+if (d(1)<d(2))
+    data = data';
+end
+
 if (~isreal(data))
-    data = [real(data); imag(data)]';
+    data = [real(data) imag(data)];
 end
 
 C = cov(data);

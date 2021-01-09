@@ -19,7 +19,7 @@ tsqc.test <- function(x,y=NULL,paired=FALSE,mu=NULL){
   if (!is.null(y)){if (!is.complex(y)){y <- complex(real=y[,1],imaginary=y[,2])}}
 
   if (is.null(y)){method <- 'One-sample T-squared circ test'}
-  if (!is.null(y) & paired==TRUE){method <- 'Paired T-squared circ test'}
+  if (!is.null(y) & paired==TRUE){method <- 'Paired samples T-squared circ test'}
   if (!is.null(y) & paired==FALSE){method <- 'Independent samples T-squared circ test'}
 
   if (paired==TRUE){if (is.null(y)==FALSE){x <- x - y}}

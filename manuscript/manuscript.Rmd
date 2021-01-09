@@ -21,7 +21,7 @@ knitr::opts_chunk$set(echo = TRUE)
 # reasonably compact code to check which packages are installed, 
 # install the missing ones, and activate all
 
-packagelist <- c('bookdown','pals','pracma','shape','reshape2','diagram','HDMD','devtools')
+packagelist <- c('bookdown','pals','pracma','shape','reshape2','diagram','devtools')
 missingpackages <- packagelist[!packagelist %in% installed.packages()[,1]]
 if (length(missingpackages)>0){install.packages(missingpackages)}
 toinstall <- packagelist[which(!packagelist %in% (.packages()))]
@@ -34,7 +34,7 @@ if (length(missingpackages)>0){devtools::install_github("bakerdh/FourierStats")}
 toinstall <- packagelist[which(!packagelist %in% (.packages()))]
 invisible(lapply(toinstall,library,character.only=TRUE))
 
-nsims <- 100000  # global value for the whole script - increase to 100000 for final run, but note this takes around 16 hours to complete (depending on processor speed)
+nsims <- 100  # global value for the whole script - increase to 100000 for final run, but note this takes around 16 hours to complete (depending on processor speed)
 
 # palette using the main colours from the NBDT journal logo
 nbdtpal <- c(rgb(0,0,0),rgb(0.73,0.16,0.42),rgb(0.22,0.44,0.64),'darkgreen','darkorange')
@@ -675,13 +675,13 @@ text(23,24,'(b)',cex=1.5)
 
 ```
 
-The eigenvalue ratio can be used as a test of the assumptions of $T^2_{circ}$. If a condition index is observed that is above the critical threshold for the number of observations, then the data set can be said to significantly violate the assumption of equal eigenvalues. Because the modified equation permits estimation of an inverse density function, this can be used to calculate a _p_-value for the test. If the test is non-significant, one can proceed with $T^2_{circ}$; if it is significant, $T^2$ should be used instead. An _R_ function implementing this test is included in the _FourierStats_ package (the _CI.test_ function).
+The eigenvalue ratio can be used as a test of the assumptions of $T^2_{circ}$. If a condition index is observed that is above the critical threshold for the number of observations, then the data set can be said to significantly violate the assumption of equal eigenvalues. Because the modified equation permits estimation of an inverse density function, this can be used to calculate a _p_-value for the test. If the test is non-significant, one can proceed with $T^2_{circ}$; if it is significant, $T^2$ should be used instead. A function implementing this test is included in the _FourierStats_ package (the _CI.test_ function in _R_, and _CI_test_ function in _Matlab_).
 
 # Identifying and removing outliers using the Mahalanobis distance
 
 If a data set produces a significant result using the condition index test, this could be due to the presence of one or more outliers. The Mahalanobis distance [@Mahalanobis1936] is a useful metric for identifying such multivariate outliers so that they can be excluded. It calculates the Euclidean distance between each data point and the centroid, and scales it by the variance in the direction of the vector that joins the two points. This means that any correlations in the data set are taken into account when calculating the distance metric, _D_.
 
-The effectiveness of this approach to outlier exclusion can be assessed by simulation using the condition index test. Figure \@ref(fig:outlierplot) shows the proportion of significant condition index tests as a function of the Mahalanobis distance of a single outlier, for a range of sample sizes (curves). In all cases, the functions depart from the Type I error rate ($\alpha$ = 0.05; horizontal dashed line in Figure \@ref(fig:outlierplot)) when the outlier's Mahalanobis distance exceeds a value around 3. This seems a reasonable heuristic for outlier exclusion, and is the multivariate equivalent of excluding data points more than 3 standard deviations from the mean (note that many implementations of the Mahalanobis distance statistic, such as the core _mahalanobis_ function in _R_, return $D^2$, which can be converted to _D_ by taking the square root). Following this heuristic should reduce the likelihood that outliers will invalidate the assumptions of the $T^2_{circ}$ test.
+The effectiveness of this approach to outlier exclusion can be assessed by simulation using the condition index test. Figure \@ref(fig:outlierplot) shows the proportion of significant condition index tests as a function of the Mahalanobis distance of a single outlier, for a range of sample sizes (curves). In all cases, the functions depart from the Type I error rate ($\alpha$ = 0.05; horizontal dashed line in Figure \@ref(fig:outlierplot)) when the outlier's Mahalanobis distance exceeds a value around 3. This seems a reasonable heuristic for outlier exclusion, and is the multivariate equivalent of excluding data points more than 3 standard deviations from the mean (note that many implementations of the Mahalanobis distance statistic, such as the core _mahalanobis_ function in _R_ (or _mahal_ function in _Matlab_), return $D^2$, which can be converted to _D_ by taking the square root). Following this heuristic should reduce the likelihood that outliers will invalidate the assumptions of the $T^2_{circ}$ test.
 
 ```{r outlierplot, fig.cap='Simulations illustrating the Mahalanobis distance metric, and showing how a single outlier affects the condition index. The upper row shows three example data sets, each with a single outlier shown in red. The outliers have approximate Mahalanobis distances of 1, 3 and 5. The ellipses are calculated with the outlier included (red) and excluded (black), illustrating how the outlier distorts the aspect ratio of the ellipse. The main plot shows how the proportion of significant condition index tests depends on the outlier distance and the sample size.', fig.align="center", fig.width=7, fig.height=6, echo=FALSE}
 
@@ -756,7 +756,7 @@ legend(0,1,samplesizes,col=nbdtpal,lwd=3,box.lwd=2,title='N observations')
 
 ```
 
-A variant of the Mahalanobis distance (the pairwise Mahalanobis distance) can also be used to compute a multivariate measure of effect size, equivalent to Cohen's _d_ statistic [see e.g. @Giudice2009]. This is a valuable statistic to include when reporting the results of multivariate tests, and an _R_ function (_pairwise.mahalanobis_) to calculate it is available as part of the [_HDMD_](https://CRAN.R-project.org/package=HDMD) package.
+A variant of the Mahalanobis distance (the pairwise Mahalanobis distance) can also be used to compute a multivariate measure of effect size, equivalent to Cohen's _d_ statistic [see e.g. @Giudice2009]. This is a valuable statistic to include when reporting the results of multivariate tests, and a function (_pairwisemahal_) to calculate it is available as part of the _FourierStats_ package.
 
 # Controlling for multiple comparisons across location and time
 
@@ -890,7 +890,7 @@ text(1.1,3.8,'(f)',cex=2)
 
 ```
 
-Following a significant ${ANOVA}^2_{circ}$ test, one could calculate $T^2_{circ}$ statistics to make post-hoc pairwise comparisons between conditions, providing that appropriate multiple comparison correction is applied (e.g. Bonferroni correction). Univariate ANOVAs on the real and imaginary components are unlikely to be informative, as the relative magnitudes depend on stimulus phase (which is arbitrary; see Figure \@ref(fig:fourierexplain)d). A repeated measures version of ${ANOVA}^2_{circ}$ can also be implemented following the same logic. The project repository contains an _R_ function (_anovacirc.test_) to run both of these tests for one-way designs. In principle factorial versions might also be derived.
+Following a significant ${ANOVA}^2_{circ}$ test, one could calculate $T^2_{circ}$ statistics to make post-hoc pairwise comparisons between conditions, providing that appropriate multiple comparison correction is applied (e.g. Bonferroni correction). Univariate ANOVAs on the real and imaginary components are unlikely to be informative, as the relative magnitudes depend on stimulus phase (which is arbitrary; see Figure \@ref(fig:fourierexplain)d). A repeated measures version of ${ANOVA}^2_{circ}$ can also be implemented following the same logic. The project repository contains a function (_anovacirc.test_ in _R_, _anovacirc_test_ in _Matlab_) to run both of these tests for one-way designs. In principle factorial versions might also be derived.
 
 # Deciding which test to run
 
@@ -1072,12 +1072,12 @@ tresult <- t.test(abs1,abs2,paired=TRUE)
 
 colnames(totest2) <- colnames(totest)
 fores <- rbind(totest,totest2)
-mahala_sq <- pairwise.mahalanobis(fores, rep(1:2,each=6))
-D <- sqrt(mahala_sq$distance[1,2])
+mahalaD <- pairwisemahal(fores, rep(1:2,each=6))
+D <- mahalaD[1,2]
 
 ```
 
-Figure \@ref(fig:mousedata)a shows Fourier amplitude spectra at two frontal electrodes (marked black in the insets) for auditory stimulation (red) and optogenetic stimulation (blue), each at 40 Hz. There is a clear frequency-locked signal with approximately equal amplitude for each stimulation modality. Indeed, a paired univariate T-test on the amplitudes reveals no significant difference (_t_ = `r round(tresult$statistic,digits=2)`, _df_ = `r tresult$parameter`, _p_ = `r round(tresult$pval,digits=2)`). However, inspection of the complex Fourier components for each condition suggests evidence of a phase difference between the two modalities (see Figure \@ref(fig:mousedata)b). The condition index test was non-significant for both conditions (sound: CI = `r round(cisound$CI,digits=2)`, _p_ = `r round(cisound$pval,digits=2)`; light: CI = `r round(cilight$CI,digits=2)`, _p_ = `r round(cilight$pval,digits=2)`), so a paired-samples $T^2_{circ}$ test was conducted. This revealed a significant difference between conditions ($T^2_{circ}$ = `r round(tsqcresult$tsqc,digits=2)`, $F_{(`r tsqcresult$df1`,`r tsqcresult$df2`)}$ = `r round(tsqcresult$Fratio,digits=2)`, _p_ = `r round(tsqcresult$pval,digits=3)`) with an effect size of _D_ = `r round(D,digits=2)`. This demonstrates that both sound and (optogenetic) light are able to entrain neural responses - the original study by Hwang et al. [-@Hwang2019] went on to explore interactions between these two signals.
+Figure \@ref(fig:mousedata)a shows Fourier amplitude spectra at two frontal electrodes (marked black in the insets) for auditory stimulation (red) and optogenetic stimulation (blue), each at 40 Hz. There is a clear frequency-locked signal with approximately equal amplitude for each stimulation modality. Indeed, a paired univariate T-test on the amplitudes reveals no significant difference (_t_ = `r round(tresult$statistic,digits=2)`, _df_ = `r tresult$parameter`, _p_ = `r round(tresult$p.value,digits=2)`). However, inspection of the complex Fourier components for each condition suggests evidence of a phase difference between the two modalities (see Figure \@ref(fig:mousedata)b). The condition index test was non-significant for both conditions (sound: CI = `r round(cisound$CI,digits=2)`, _p_ = `r round(cisound$pval,digits=2)`; light: CI = `r round(cilight$CI,digits=2)`, _p_ = `r round(cilight$pval,digits=2)`), so a paired-samples $T^2_{circ}$ test was conducted. This revealed a significant difference between conditions ($T^2_{circ}$ = `r round(tsqcresult$tsqc,digits=2)`, $F_{(`r tsqcresult$df1`,`r tsqcresult$df2`)}$ = `r round(tsqcresult$Fratio,digits=2)`, _p_ = `r round(tsqcresult$pval,digits=3)`) with an effect size of _D_ = `r round(D,digits=2)`. This demonstrates that both sound and (optogenetic) light are able to entrain neural responses - the original study by Hwang et al. [-@Hwang2019] went on to explore interactions between these two signals.
 
 ## Human visual steady-state data
 
@@ -1219,8 +1219,8 @@ alltsq[cond-1,1:6] <- tsqc.test(set1,set2,paired=TRUE)
 colnames(set1) <- c('x','y')
 colnames(set2) <- c('x','y')
 fores <- rbind(set1,set2)
-mahala_sq <- pairwise.mahalanobis(fores, rep(1:2,each=89))
-allD[cond-1] <- sqrt(mahala_sq$distance[1,2])
+mahalaD <- pairwisemahal(fores, rep(1:2,each=89))
+allD[cond-1] <- mahalaD[1,2]
 
 }
 colnames(alltsq) <- colnames(tsqc.test(set1,set2,paired=TRUE))
@@ -1238,7 +1238,7 @@ The present paper has focussed on the Frequentist statistical tradition. However
 
 Another possibility is to use machine learning techniques such as multivariate pattern analysis (MVPA) to analyse periodic data. This involves training a classifier algorithm to distinguish between two (or more) experimental conditions or states, and then assessing classifier accuracy for predicting the group labels of fresh data. If different conditions produce distinct patterns of neural response, then classifier accuracy will be above chance. Such methods have been hugely influential in the fMRI literature [@Schwarzkopf2011], and for analysing event-related potential data collected using EEG or MEG [@Grootswagers2017]. However, they have not been widely applied to steady-state data (though see West et al. [-@West2015] for one example). In principle, the real and imaginary Fourier components can be treated as separate dependent variables, along with different recording locations and/or frequencies. This approach has the potential to offer sensitive, high-powered statistical tests that circumvent many of the shortcomings associated with traditional statistics.
 
-Even when statistics are conducted using both the real and imaginary Fourier components, it is still typical to visualise the mean amplitudes. Several approaches to calculating appropriate error bars have been proposed. For example, Pei et al. [-@Pei2017] suggest calculating the nearest and farthest points from the origin on the bounding ellipse, and using these to derive standard errors for the amplitude. This approach is somewhat demanding, though an _R_ function is provided to calculate error bars using this method (available through the _amperrors_ function). However, as an alternative, bootstrap resampling offers a powerful and general method for calculating confidence intervals on amplitudes. This is achieved by resampling the complex data (with replacement) and calculating a resampled complex mean. The amplitude is then derived for this resampled mean, and the procedure repeated a large number of times (1000 or 10000 repetitions is typical) to build up a population of resampled mean amplitudes. Upper and lower confidence intervals on the amplitude can then be taken at appropriate quantiles of this population (68% and 95% are typical, with the 68% interval corresponding to the standard error).
+Even when statistics are conducted using both the real and imaginary Fourier components, it is still typical to visualise the mean amplitudes. Several approaches to calculating appropriate error bars have been proposed. For example, Pei et al. [-@Pei2017] suggest calculating the nearest and farthest points from the origin on the bounding ellipse, and using these to derive standard errors for the amplitude. This approach is somewhat demanding, though a function is provided to calculate error bars using this method (available through the _amperrors_ function). However, as an alternative, bootstrap resampling offers a powerful and general method for calculating confidence intervals on amplitudes. This is achieved by resampling the complex data (with replacement) and calculating a resampled complex mean. The amplitude is then derived for this resampled mean, and the procedure repeated a large number of times (1000 or 10000 repetitions is typical) to build up a population of resampled mean amplitudes. Upper and lower confidence intervals on the amplitude can then be taken at appropriate quantiles of this population (68% and 95% are typical, with the 68% interval corresponding to the standard error).
 
 # General recommendations for analysing periodic data
 

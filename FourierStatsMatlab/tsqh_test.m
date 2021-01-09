@@ -5,6 +5,7 @@ function output = tsqh_test(x,y,paired,mu)
 % for a one-sample test, mu is an optional vector to which the data are compared
 % for a two-sample test, x and y are the data from the two conditions
 % if paired=TRUE, the matrices (x and y) must be the same size
+% this function is part of the FourierStats package: https://github.com/bakerdh/FourierStats
 
 d = size(x);
 if (d(1)<d(2))
@@ -21,12 +22,16 @@ if (~isempty(mu))
     end
 end
 
+if (isempty(paired))
+    paired = 0;
+end
+
 if ~isreal(x)
-    x = [real(x); imag(x)]';
+    x = [real(x) imag(x)];
 end
 if (~isempty(y))
     if ~isreal(y)
-        y = [real(y); imag(y)]';
+        y = [real(y) imag(y)];
     end
 end
 
@@ -49,7 +54,7 @@ end
 
 if (paired==1 || isempty(y))
     % paired or one-sample version of the test
-
+    
     xbar = mean(x);
     s = size(x);
     m = s(2);
@@ -93,7 +98,7 @@ end
 
 pval = min(pval,1);
 
-output.tsqc = tsq;
+output.tsq = tsq;
 output.Fratio = Fratio;
 output.df1 = df1;
 output.df2 = df2;

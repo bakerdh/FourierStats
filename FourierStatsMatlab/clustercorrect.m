@@ -14,6 +14,7 @@ function clustout = clustercorrect(datax,datay,adjacencymatrix,testtype,paired,c
 % this should be an m x m matrix (where m is the number of sensors), where values are zero for non-adjacent sensor pairs, and 1 for adjacent pairs
 %
 % outputs an object containing the indices of all significant clusters
+% this function is part of the FourierStats package: https://github.com/bakerdh/FourierStats
 
 if (isempty(paired))
     paired = 0;

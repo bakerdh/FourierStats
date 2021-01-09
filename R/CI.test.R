@@ -9,6 +9,9 @@
 #' @export
 CI.test <- function(data, alpha=0.05){
 
+  if (!is.null(ncol(data))){d <- dim(data)
+  if (d[1]<d[2]){data <- t(data)}}
+
   if (is.complex(data)){data <- data.frame(Re(data),Im(data))}
 
   C <- cov(data)  # covariance matrix

@@ -153,7 +153,7 @@ if (assumptionsmet==0 && ngroups>2){
 
   if (isRM==0){
     message('Running an independent MANOVA')
-    output$testtype <- 'Independent MANOVA'
+    output$testtype <- 'Independent MANOVA (test statistic is modified ANOVA-like statistic)'
     dataforManova <- data.frame(grouplabels,Re(complexdata),Im(complexdata))
     colnames(dataforManova) <- c("Group","Real","Imaginary")
     results <- MANOVA.RM::MANOVA.wide(cbind(dataforManova$Real, dataforManova$Imaginary) ~ Group, data = dataforManova)
@@ -163,7 +163,7 @@ if (assumptionsmet==0 && ngroups>2){
     dataforManova <- data.frame(grouplabels,participantlabels,Re(complexdata),Im(complexdata))
     colnames(dataforManova) <- c("Group","Participant","Real","Imaginary")
     results <- MANOVA.RM::multRM(cbind(dataforManova$Real, dataforManova$Imaginary) ~ Group, data=dataforManova, subject="Participant", within="Group")
-    output$testtype <- 'Repeated measures MANOVA'
+    output$testtype <- 'Repeated measures MANOVA (test statistic is modified ANOVA-like statistic)'
     }
   output$teststat <- as.numeric(results$MATS)
   output$pval <- results$resampling[2]
@@ -180,8 +180,8 @@ if (ngroups==1){
 }
 if (ngroups > 1){
   # calculate pairwise Mahalanobis distance between each pair of conditions
-  mahala_sq <- HDMD::pairwise.mahalanobis(data.frame(Re(complexdata),Im(complexdata)),grouplabels)
-  D <- max(sqrt(mahala_sq$distance))  # choose the largest effect size
+  pmahal <- pairwisemahal(data.frame(Re(complexdata),Im(complexdata)),grouplabels)
+  D <- max(pmahal)  # choose the largest effect size
 }
 message(paste('The effect size (Mahalanobis distance) is D =',round(D,digits=2)))
 

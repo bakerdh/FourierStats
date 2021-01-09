@@ -8,8 +8,7 @@ Authors@R:
            email = "daniel.baker@york.ac.uk",
            comment = c(ORCID = "0000-0002-0161-443X"))
 Description: The FourierStats package implements several statistical tests for use with bivariate data such as the complex (real and imaginary) components of the Fourier spectrum. Included functions implement the T-squared-circ test of Victor & Mast (1991), and the condition index and ANOVA-squared-circ described by Baker (2021).
-License: `use_mit_license()`, `use_gpl3_license()` or friends to
-    pick a license
+License: use_gpl3_license()
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
@@ -17,7 +16,6 @@ RoxygenNote: 7.1.0
 Imports:
   stats,
   MANOVA.RM,
-  HDMD,
   pracma
 Suggests: 
     knitr,

@@ -14,11 +14,16 @@ function output = anovacirc_test(data,group,participant)
 %        this is an optional input, but if it is supplied it supercedes values from the matrix
 %
 % see Baker (2021) for further details
+% this function is part of the FourierStats package: https://github.com/bakerdh/FourierStats
 
 grouplabels = [];
 participantlabels = [];
 
 s = size(data);
+
+if (s(1)<s(2))
+    data = data';
+end
 
 if (~isreal(data(1)))
     datavals = data;
@@ -72,7 +77,7 @@ if (isempty(participantlabels))
     output.dfR = dfR;
     output.MSM = MSM;
     output.MSR = MSR;
-    output.method = 'Between-subjects ANOVA2-circ';
+    output.method = 'One-way between-subjects ANOVA^2-circ';
     
 else
     % participant labels have been supplied, run a repeated measures ANOVA-circ test
@@ -110,7 +115,7 @@ else
     output.dfR = dfR;
     output.MSM = MSM;
     output.MSR = MSR;
-    output.method = 'Repeated measures ANOVA2-circ';
+    output.method = 'One-way repeated measures ANOVA^2-circ';
    
 end
 

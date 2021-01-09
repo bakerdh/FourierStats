@@ -2,6 +2,7 @@ function output = getel(input)
 % getel: helper function that calculates an ellipse bounding some data points
 % the outline of the ellipse is returned, sampled at 200 points
 % the input should be an Nx2 matrix of observations or an N-length vector of complex values
+% this function is part of the FourierStats package: https://github.com/bakerdh/FourierStats
 
 compdata = input;
 if (~isreal(input))

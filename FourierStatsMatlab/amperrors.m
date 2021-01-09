@@ -11,6 +11,7 @@ function output = amperrors(input,method,quantiles,nresamples)
 %  the optional 'nresamples' variable allows the number of iterations to be determined for the bootstrapping option (ignored for other methods)
 %  typical values are 95 (for 95% confidence intervals), and 68 (for standard errors)
 %  the function returns the mean amplitude and the upper and lower error bars
+%  this function is part of the FourierStats package: https://github.com/bakerdh/FourierStats
 
 if isempty(quantiles)
     quantiles = 95;

@@ -21,6 +21,9 @@ anovacirc.test <- function(data, group=NULL, participant=NULL){
   # if the input data is a vector, it must be complex Fourier components
   if (is.null(ncol(data))){datavals <- data}
 
+  if (!is.null(ncol(data))){d <- dim(data)
+  if (d[1]<d[2]){data <- t(data)}}
+
   # if the input is not a vector, then work out what it contains based on its dimensions
   if (!is.null(ncol(data))){d <- dim(data)
 
@@ -62,7 +65,8 @@ anovacirc.test <- function(data, group=NULL, participant=NULL){
   Fratio <- MSM/MSR
   pval <- pf(Fratio,df1=dfM,df2=dfR,lower.tail=FALSE)
 
-  output <- data.frame(Fratio,pval,SSM,SSR,dfM,dfR,MSM,MSR)
+  method <- 'One-way between-subjects ANOVA^2-circ'
+  output <- data.frame(Fratio,pval,SSM,SSR,dfM,dfR,MSM,MSR,method)
 }
 
   # if participant labels have been supplied, run a repeated measures ANOVA-circ
@@ -88,7 +92,8 @@ anovacirc.test <- function(data, group=NULL, participant=NULL){
   Fratio <- MSM/MSR
   pval <- pf(Fratio,df1=dfM,df2=dfR,lower.tail=FALSE)
 
-  output <- data.frame(Fratio,pval,SSW,SSM,SSR,dfW,dfM,dfR,MSM,MSR)
+  method <- 'One-way repeated measures ANOVA^2-circ'
+  output <- data.frame(Fratio,pval,SSW,SSM,SSR,dfW,dfM,dfR,MSM,MSR,method)
   }
 
   return(output)
