@@ -1,4 +1,4 @@
-function output = analysecplx(data, group, participant)
+function output = analysecplx(data, varargin)
 
 % analysecplx: wrapper function that automatically decides which statistical test to run for a given data set
 %
@@ -17,6 +17,16 @@ function output = analysecplx(data, group, participant)
 % if participant labels are included, a repeated measures test is conducted
 % the Mahalanobis distance effect size statistic (D) is also calculated
 % this function is part of the FourierStats package: https://github.com/bakerdh/FourierStats
+
+group = [];
+participant = [];
+if nargin>1
+    group = varargin{1};
+    if nargin>2
+        participant = varargin{2};
+    end
+end
+
 
 grouplabels = [];
 participantlabels = [];

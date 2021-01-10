@@ -1,4 +1,4 @@
-function output = CI_test(data,alpha)
+function output = CI_test(data,varargin)
 % CI.test: function to calculate the condition index of bivariate data
 % Inputs:
 %   data is an N x 2 matrix of bivariate (x,y) observations, or a vector of N complex values
@@ -12,8 +12,9 @@ function output = CI_test(data,alpha)
 % see Baker (2021) for further details
 % this function is part of the FourierStats package: https://github.com/bakerdh/FourierStats
 
-if (isempty(alpha))
-    alpha = 0.05;
+alpha = 0.05;
+if nargin>1
+    alpha = varargin{1};
 end
 
 d = size(data);

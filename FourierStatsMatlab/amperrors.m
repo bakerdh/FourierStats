@@ -1,4 +1,4 @@
-function output = amperrors(input,method,quantiles,nresamples)
+function output = amperrors(input,varargin)
 
 % amperrors: calculate error bars on the amplitude component of coherently averaged data
 % the input is a vector of complex numbers, or an Nx2 matrix of real and imaginary components
@@ -13,14 +13,17 @@ function output = amperrors(input,method,quantiles,nresamples)
 %  the function returns the mean amplitude and the upper and lower error bars
 %  this function is part of the FourierStats package: https://github.com/bakerdh/FourierStats
 
-if isempty(quantiles)
-    quantiles = 95;
-end
-if isempty(nresamples)
-    nresamples = 10000;
-end
-if isempty(method)
-    method = 'b';
+method = 'b';
+quantiles = 95;
+nresamples = 10000;
+if nargin>1
+    method = varargin{1};
+    if nargin>2
+        quantiles = varargin{2};
+        if nargin>3
+            nresamples = varargin{3};
+        end
+    end
 end
 
 s = size(input);

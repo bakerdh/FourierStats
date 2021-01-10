@@ -1,4 +1,4 @@
-function output = tsqh_test(x,y,paired,mu)
+function output = tsqh_test(x,varargin)
 
 % tsqh.test: function to calculate a different variants of the T-squared test of Hotelling (1931)
 % the inputs must be Nx2 or 2xN matrices of numbers
@@ -6,6 +6,19 @@ function output = tsqh_test(x,y,paired,mu)
 % for a two-sample test, x and y are the data from the two conditions
 % if paired=TRUE, the matrices (x and y) must be the same size
 % this function is part of the FourierStats package: https://github.com/bakerdh/FourierStats
+
+y = [];
+paired = 0;
+mu = [];
+if nargin>1
+    y = varargin{1};
+    if nargin>2
+        paired = varargin{2};
+        if nargin>3
+            mu = varargin{3};
+        end
+    end
+end
 
 d = size(x);
 if (d(1)<d(2))

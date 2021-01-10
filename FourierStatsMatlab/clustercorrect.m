@@ -1,12 +1,13 @@
-function clustout = clustercorrect(datax,datay,adjacencymatrix,testtype,paired,clustformthresh,clustthresh,nresamples)
+function clustout = clustercorrect(datax,varargin)
 
 % clustercorrect: implements non-parametric cluster correction method described by Maris & Oostenveld (2007) J Neurosci Methods, 164: 177-190, doi: 10.1016/j.jneumeth.2007.03.024
 % this version can deal with complex data using the T-squared or T-squared-circ statistics
 %
+% function call: clustercorrect(datax, datay, adjacencymatrix, testtype, paired, clustformthresh, clustthresh, nresamples)
 % The input datax should be an N (participants) x m (sensors/timepoints/locations) matrix
 % The optional input datay can either be a matrix of the same dimensions, or N2 x m (for unpaired designs with unbalanced samples), or a single value to compare to datax
 %
-% Legal values of the testtype input are 1: t-test, 2: Hotelling's T-squared, 3: Victor & Mast's T-squared-circ
+% Permitted values of the testtype input are 1: t-test, 2: Hotelling's T-squared, 3: Victor & Mast's T-squared-circ
 % Complex values are required for options 2 & 3. If complex values are passed in for test 1 (t-test), they will be converted to amplitudes
 %
 % if the measures are from adjacent time points, an adjacency matrix will be automatically constructed
@@ -16,18 +17,36 @@ function clustout = clustercorrect(datax,datay,adjacencymatrix,testtype,paired,c
 % outputs an object containing the indices of all significant clusters
 % this function is part of the FourierStats package: https://github.com/bakerdh/FourierStats
 
-if (isempty(paired))
-    paired = 0;
+datay = [];
+adjacencymatrix = [];
+testtype = 3;
+paired = 0;
+clustformthresh = 0.05;
+clustthresh = 0.05;
+nresamples = 1000;
+
+if nargin>1
+    datay = varargin{1};
+    if nargin>2
+        adjacencymatrix = varargin{2};
+        if nargin>3
+            testtype = varargin{3};
+            if nargin>4
+                paired = varargin{4};
+                if nargin>5
+                    clustformthresh = varargin{5};
+                    if nargin>6
+                        clustthresh = varargin{6};
+                        if nargin>7
+                            nresamples = varargin{7};
+                        end
+                    end
+                end
+            end
+        end
+    end
 end
-if (isempty(clustformthresh))
-    clustformthresh = 0.05;
-end
-if (isempty(clustthresh))
-    clustthresh = 0.05;
-end
-if (isempty(nresamples))
-    nresamples = 1000;
-end
+
 
 clustout = [];
 sigclustercount = 0;
@@ -61,7 +80,9 @@ if (isempty(adjacencymatrix))
     adjacencymatrix = zeros(m,m);
     for n = 1:(m-1)
         adjacencymatrix(n,n+1) = 1;
-        adjacencymatrix(n-1,n) = 1;
+    end
+    for n = 2:m
+        adjacencymatrix(n,n-1) = 1;
     end
 end
 
@@ -98,7 +119,7 @@ for n = 1:m
             case 2  % two sample Hotelling's t-squared
                 output = tsqh_test(datax(:,n),datay(:,n));
                 allp(n) = output.pval;
-                allt(n) = output.tsq;                
+                allt(n) = output.tsq;
             case 3  % two-sample T-squared-circ
                 output = tsqc_test(datax(:,n),datay(:,n));
                 allp(n) = output.pval;
@@ -112,129 +133,112 @@ allp(find(isnan(allp))) = 1;
 
 % now generate a list of clusters of adjacent significant elements
 
-allclusters = {};
-clusterstarts = [];
-clusterends = [];
-nclusters = 0;
-incluster = 0;
+hvect = zeros(1,m);
+hvect(allp<clustformthresh) = 1;
+hmat = repmat(hvect,[m 1]);
+hmat2 = hmat .* hmat';
+clustprod = hmat2 .* adjacencymatrix;
+
+clusterlist = {};
+nclusts = 0;
 for n = 1:m
-    if (allp(n)<clustformthresh)
-        nclusters = nclusters + 1;
-        clusterlist = n;
-        for n2 = 1:m
-            if (adjacencymatrix(n,n2)==1 && allp(n2)<clustformthresh)
-                clusterlist = [clusterlist n2];
+    temp = sum(clustprod(n,:));
+    if temp>0
+        i = find(clustprod(n,:)>0);
+        tempclust = [n i];
+        clustprod(n,:) = 0;
+        clustprod(:,n) = 0;
+        cnt = 1;
+        while cnt<length(tempclust)
+            cnt = cnt + 1;
+            temp = sum(clustprod(tempclust(cnt),:));
+            if temp>0
+                i = find(clustprod(tempclust(cnt),:)>0);
+                tempclust = [tempclust i];
+                clustprod(tempclust(cnt),:) = 0;
+                clustprod(:,tempclust(cnt)) = 0;
             end
         end
-        allclusters{nclusters} = clusterlist;
+        nclusts = nclusts + 1;
+        clusterlist{nclusts} = unique(tempclust);
     end
 end
 
-if (nclusters>0)
-    allclusters{nclusters+1} = 0; % fiddle to prevent later errors
-    
-    % condense the clusters by pooling any with overlapping elements
-    
-    ccount = 0;
-    clustersizes = [];
-    condensedclusters = {};
-    for n = 1:nclusters
-        targetcluster = allclusters{n};
-        if (~isempty(targetcluster))
-            if (sum(targetcluster)>0)
-                for n2 = (n+1):nclusters
-                    compcluster = allclusters{n2};
-                    if (~isempty(compcluster))
-                        if (sum(compcluster)>0)
-                            lia = ismember(targetcluster,compcluster);
-                            if (sum(lia)>0)
-                                targetcluster = [targetcluster, compcluster);
-                                allclusters{n2} = 0;
-                            end
-                        end
-                    end
-                end
-                ccount = ccount + 1;
-                condensedclusters{ccount} = unique(targetcluster);
-                clustersizes(ccont) = length(unique(targetcluster));
-            end
-        end
-    end
-    
-    for cc = 1:ccount
-        Cindices = condensedclusters{cc};
-        sumtvals(cc) = sum(allt(Cindices));
-    end
-    
-    i = find(sumtvals==max(sumtvals)); % find the largest cluster
-    maxcluster = condensedclusters{i}; % store the largest cluster
-    
-    if (length(maxcluster)>1)
-        % build a null distribution by permuting signs/group labels
-        for n = 1:nresamples
-            tsum = 0;
-            if (isempty(datay))
-                randsigns = (round(rand(1,N))*2)-1;
-            else
-                randgroups = randperm(N+N2);
-            end
-            for elcounter = 1:length(maxcluster)
-                
-                if (isempty(datay))  % one sample or paired test
-                    tempdataA = datax(:,maxcluster(elcounter)).*randsigns;
-                    
-                    switch testtype
-                        case 1  % univariate t-test
-                            [h,p,ci,output] = ttest(tempdataA);
-                            tsum = tsum + output.tstat;
-                        case 2  % one-sample Hotelling's t-squared
-                            output = tsqh_test(tempdataA);
-                            tsum = tsum + output.tsq;
-                        case 3  % one-sample T-squared-circ
-                            output = tsqc_test(tempdataA);
-                            tsum = tsum + output.tsqc;
-                    end
-                    
-                    
-                else
-                    tempdata = [datax(:,maxcluster(elcounter)),datay(:,maxcluster(elcounter))];
-                    tempdataA = tempdata(randgroups(1:N));
-                    tempdataB = tempdata(randgroups((N+1):(N+N2)));
-                    switch testtype
-                        case 1  % independent univariate t-test
-                            [h,p,ci,output] = ttest2(tempdataA,tempdataB);
-                            tsum = tsum + output.tstat;
-                        case 2  % two sample Hotelling's t-squared
-                            output = tsqh_test(tempdataA,tempdataB);
-                            tsum = tsum + output.tsq;
-                        case 3  % two-sample T-squared-circ
-                            output = tsqc_test(tempdataA,tempdataB);
-                            tsum = tsum + output.tsqc;
-                    end
-                end
-                nulldist(n) = tsum;
-            end
-        end
-        
-        % compare each cluster to the null distribution, retain the significant ones
-        
-        clusterps = zeros(1,ccount);
-        if (length(nulldist)==nresamples)
-            for cc = 1:ccount
-                i = find(abs(nulldist)>abs(sumtvals(cc)));
-                if (~isempty(i))
-                    clusterps(cc) = length(i)/nresamples;
-                end
-                if (clusterps(cc)<clusterthresh)
-                    sigclustercount = sigclustercount + 1;
-                    clusterpoints{sigclustercount} = condensedclusters{cc};
-                    clusterpout(sigclustercount) = clusterps(cc);
-                end
-            end
-        end
-    end
-    
+if nclusts>0
+for cc = 1:nclusts
+    Cindices = clusterlist{cc};
+    sumtvals(cc) = sum(allt(Cindices));
 end
+
+i = find(sumtvals==max(sumtvals)); % find the largest cluster
+maxcluster = clusterlist{i}; % store the largest cluster
+
+if (length(maxcluster)>1)
+    % build a null distribution by permuting signs/group labels
+    for n = 1:nresamples
+        tsum = 0;
+        if (isempty(datay))
+            randsigns = (round(rand(N,1))*2)-1;
+        else
+            randgroups = randperm(N+N2);
+        end
+        for elcounter = 1:length(maxcluster)
+            
+            if (isempty(datay))  % one sample or paired test
+                tempdataA = datax(:,maxcluster(elcounter)).*randsigns;
+                
+                switch testtype
+                    case 1  % univariate t-test
+                        [h,p,ci,output] = ttest(tempdataA);
+                        tsum = tsum + output.tstat;
+                    case 2  % one-sample Hotelling's t-squared
+                        output = tsqh_test(tempdataA);
+                        tsum = tsum + output.tsq;
+                    case 3  % one-sample T-squared-circ
+                        output = tsqc_test(tempdataA);
+                        tsum = tsum + output.tsqc;
+                end
+                
+                
+            else
+                tempdata = [datax(:,maxcluster(elcounter)),datay(:,maxcluster(elcounter))];
+                tempdataA = tempdata(randgroups(1:N));
+                tempdataB = tempdata(randgroups((N+1):(N+N2)));
+                switch testtype
+                    case 1  % independent univariate t-test
+                        [h,p,ci,output] = ttest2(tempdataA,tempdataB);
+                        tsum = tsum + output.tstat;
+                    case 2  % two sample Hotelling's t-squared
+                        output = tsqh_test(tempdataA,tempdataB);
+                        tsum = tsum + output.tsq;
+                    case 3  % two-sample T-squared-circ
+                        output = tsqc_test(tempdataA,tempdataB);
+                        tsum = tsum + output.tsqc;
+                end
+            end
+            nulldist(n) = tsum;
+        end
+    end
+    
+    % compare each cluster to the null distribution, retain the significant ones
+    
+    clusterps = zeros(1,nclusts);
+    if (length(nulldist)==nresamples)
+        for cc = 1:nclusts
+            i = find(abs(nulldist)>abs(sumtvals(cc)));
+            if (~isempty(i))
+                clusterps(cc) = length(i)/nresamples;
+            end
+            if (clusterps(cc)<clustthresh)
+                sigclustercount = sigclustercount + 1;
+                clusterpoints{sigclustercount} = clusterlist{cc};
+                clusterpout(sigclustercount) = clusterps(cc);
+            end
+        end
+    end
+end
+end
+
 
 clustout.clusterpoints = clusterpoints;
 clustout.nclusters = sigclustercount;

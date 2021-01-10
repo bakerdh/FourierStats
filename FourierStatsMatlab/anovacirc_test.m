@@ -1,4 +1,4 @@
-function output = anovacirc_test(data,group,participant)
+function output = anovacirc_test(data,varargin)
 
 % anovacirc.test: two-dimensional analysis of variance using complex data
 % an extension of the logic of the T-squared circ statistic of Victor & Mast (1991)
@@ -15,6 +15,15 @@ function output = anovacirc_test(data,group,participant)
 %
 % see Baker (2021) for further details
 % this function is part of the FourierStats package: https://github.com/bakerdh/FourierStats
+
+group = [];
+participant = [];
+if nargin>1
+    group = varargin{1};
+    if nargin>2
+        participant = varargin{2};
+    end
+end
 
 grouplabels = [];
 participantlabels = [];

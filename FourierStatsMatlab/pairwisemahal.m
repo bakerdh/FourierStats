@@ -1,5 +1,4 @@
-function output = pairwisemahal(data,grouping)
-
+function output = pairwisemahal(varargin)
 % calculates the pairwise (group to group) Mahalanobis distance between group means
 %
 % inputs:
@@ -16,6 +15,13 @@ function output = pairwisemahal(data,grouping)
 %
 % this function is part of the FourierStats package: https://github.com/bakerdh/FourierStats
 
+if nargin>0
+    data = varargin{1};
+    
+    if nargin>1
+        grouping = varargin{2};
+    end
+    
 d = size(data);
 if (d(1)<d(2))
     data = data';
@@ -60,5 +66,8 @@ end
 
 output.D = distances;
 output.groups = grouplabels;
+else
+    output = [];
+end
 
 end

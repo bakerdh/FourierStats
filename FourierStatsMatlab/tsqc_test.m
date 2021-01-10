@@ -1,4 +1,4 @@
-function output = tsqc_test(x,y,paired,mu)
+function output = tsqc_test(x,varargin)
 
 % tsqc_test: function to calculate the T-squared circ statistic from Victor & Mast (1991)
 % the inputs must be Nx2 or 2xN matrices of numbers
@@ -8,10 +8,24 @@ function output = tsqc_test(x,y,paired,mu)
 % the output is a structure containing the test results
 % this function is part of the FourierStats package: https://github.com/bakerdh/FourierStats
 
+y = [];
+paired = 0;
+mu = [];
+if nargin>1
+    y = varargin{1};
+    if nargin>2
+        paired = varargin{2};
+        if nargin>3
+            mu = varargin{3};
+        end
+    end
+end
+
 d = size(x);
 if (d(1)<d(2))
     x = x';
 end
+
 if (~isempty(y))
 d = size(y);
 if (d(1)<d(2))

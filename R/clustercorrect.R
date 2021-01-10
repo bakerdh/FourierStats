@@ -37,10 +37,8 @@ clustercorrect <- function(datax,datay=NULL,adjacencymatrix=NULL,testtype=1,pair
   if (length(adjacencymatrix)==0){
     # if no adjacency matrix has been passed in, we assume that subsequent observations are adjacent
     adjacencymatrix <- matrix(0,nrow=m,ncol=m)
-    for (n in 1:(m-1)){
-      adjacencymatrix[n,n+1] <- 1;
-      adjacencymatrix[n+1,n] <- 1;
-    }
+    for (n in 1:(m-1)){adjacencymatrix[n,n+1] <- 1}
+    for (n in 2:m){adjacencymatrix[n,n-1] <- 1}
   }
 
   allp <- NULL
@@ -82,60 +80,47 @@ clustercorrect <- function(datax,datay=NULL,adjacencymatrix=NULL,testtype=1,pair
   }
 
   allp[which(is.na(allp))] <- 1
+
   # now generate a list of clusters of adjacent significant elements
-  allclusters <- list()
-  clusterstarts <- NULL
-  clusterends <- NULL
-  nclusters <- 0
-  incluster = 0
+  hvect <- rep(0,m)
+  hvect[which(allp<clustformthresh)] <- 1
+  hmat <- matrix(hvect,nrow=m,ncol=m)
+  hmat2 <- hmat * t(hmat)
+  clustprod <- hmat2 * adjacencymatrix
+
+  clusterlist <- list()
+  nclusts <- 0
   for (n in 1:m){
-    if (allp[n]<clustformthresh){
-      nclusters <- nclusters + 1
-      clusterlist <- n
-      for (n2 in 1:m){
-        if (adjacencymatrix[n,n2]==1 && allp[n2]<clustformthresh){
-            clusterlist <- c(clusterlist,n2)
+    temp = sum(clustprod[n,])
+    if (temp>0){
+      i <- which(clustprod[n,]>0)
+      tempclust <- c(n, i)
+      clustprod[n,] <- 0
+      clustprod[,n] <- 0
+      cnt <- 0
+      while (cnt<length(tempclust)){
+        cnt <- cnt + 1
+        temp = sum(clustprod[tempclust[cnt],])
+        if (temp>0){
+          i <- which(clustprod[tempclust[cnt],]>0)
+          tempclust <- c(tempclust, i)
+          clustprod[tempclust[cnt],] <- 0
+          clustprod[,tempclust[cnt]] <- 0
         }
       }
-      allclusters[[nclusters]] <- clusterlist
+      nclusts <- nclusts + 1
+      clusterlist[[nclusts]] <- sort(unique(tempclust))
     }
   }
 
-  if (!isempty(allclusters)){
-    allclusters[[nclusters+1]] <- 0  # fiddle to prevent later errors
-
-    # condense the clusters by pooling any with overlapping elements
-    ccount <- 0
-    clustersizes <- NULL
-    condensedclusters <- list()
-    for (n in 1:nclusters){
-      targetcluster <- allclusters[[n]]
-      if (!isempty(targetcluster)){
-        if (sum(targetcluster)>0){
-        for (n2 in (n+1):nclusters){
-          compcluster <- allclusters[[n2]]
-          if (!isempty(compcluster)){
-            if (sum(compcluster)>0){
-            lia <- targetcluster %in% compcluster
-            if (sum(lia)>0){
-              targetcluster <- c(targetcluster,compcluster)
-              allclusters[[n2]] <- 0
-            }
-          }}
-        }
-        ccount <- ccount + 1
-        condensedclusters[[ccount]] <- unique(targetcluster)
-        clustersizes[ccount] <- length(unique(targetcluster))
-      }}
-    }
-
+  if (nclusts>0){
     sumtvals <- NULL
-    for (cc in 1:ccount){
-      Cindices <- as.numeric(condensedclusters[[cc]])
+    for (cc in 1:nclusts){
+      Cindices <- as.numeric(clusterlist[[cc]])
       sumtvals[cc] <- sum(allt[Cindices])}
 
     i <- which(sumtvals==max(sumtvals))  # find the largest cluster
-    maxcluster <- condensedclusters[[i]]  # store the largest cluster
+    maxcluster <- clusterlist[[i]]  # store the largest cluster
 
     if (length(maxcluster)>1){
     # build a null distribution by permuting signs/group labels
@@ -178,14 +163,14 @@ clustercorrect <- function(datax,datay=NULL,adjacencymatrix=NULL,testtype=1,pair
     }
 
     # compare each cluster to the null distribution, retain the significant ones
-    clusterps <- 0*(1:ccount)
+    clusterps <- 0*(1:nclusts)
     if (length(nulldist)==nresamples){
-    for (cc in 1:ccount){
+    for (cc in 1:nclusts){
       i <- which(abs(nulldist)>abs(sumtvals[cc]))
       if (!isempty(i)){clusterps[cc] <- length(i)/nresamples}
       if (clusterps[cc]<clustthresh){
         sigclustercount <- sigclustercount + 1
-        clusterpoints[[sigclustercount]] <- condensedclusters[[cc]]
+        clusterpoints[[sigclustercount]] <- clusterlist[[cc]]
         clusterpout[sigclustercount] <- clusterps[cc]
         }
     }}
