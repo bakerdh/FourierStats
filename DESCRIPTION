@@ -1,13 +1,13 @@
 Package: FourierStats
 Title: Statistical Tests for Periodic Fourier Data from Neuroscience Experiments
-Version: 0.0.0.9000
+Version: 0.1.0.0000
 Authors@R: 
     person(given = "Daniel",
            family = "Baker",
            role = c("aut", "cre"),
            email = "daniel.baker@york.ac.uk",
            comment = c(ORCID = "0000-0002-0161-443X"))
-Description: The FourierStats package implements several statistical tests for use with bivariate data such as the complex (real and imaginary) components of the Fourier spectrum. Included functions implement the T-squared-circ test of Victor & Mast (1991), and the condition index and ANOVA-squared-circ described by Baker (2021).
+Description: The FourierStats package implements several statistical tests for use with bivariate data such as the complex (real and imaginary) components of the Fourier spectrum. Included functions implement the T-squared-circ test of Victor & Mast (1991), and the condition index and ANOVA-squared-circ tests described by Baker (2021).
 License: use_gpl3_license()
 Encoding: UTF-8
 LazyData: true

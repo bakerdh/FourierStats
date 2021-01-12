@@ -108,7 +108,7 @@ CI.test(data)
 
 A non-significant _p_-value means that the assumptions of the $T^2_{circ}$ and $ANOVA^2_{circ}$ test are met. This should be done for each condition separately.
 
-To calculate pairwise Mahalanobis distances as measures of effect size, we can use the _pairwise.mahalanobis_ function from the _HDMD_ package:
+To calculate pairwise Mahalanobis distances as measures of effect size, we can use the _pairwisemahal_ function:
 
 ```{r}
 A <- data.frame(Re(alltarget[,31,1]),Im(alltarget[,31,1]))
@@ -116,12 +116,11 @@ B <- data.frame(Re(alltarget[,31,7]),Im(alltarget[,31,7]))
 colnames(A) <- c('x','y')
 colnames(B) <- c('x','y')
 fores <- rbind(A,B)
-mahala_sq <- HDMD::pairwise.mahalanobis(fores, rep(1:2,each=100))
-sqrt(mahala_sq$distance)
+pairwisemahal(fores, rep(1:2,each=100))
 
 ```
 
-The function returns the squared distance, so we take the square root for the _D_ statistic.
+The function returns a matrix of _D_ statistics (structured like a correlation matrix), showing the Mahalanobis distance between the means of each pair of conditions.
 
 Alternatively the _analysecplx_ function will perform the condition index test, and then run an appropriate test based on its outcome and the study design, as well as calculating the largest effect size: 
 
