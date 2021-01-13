@@ -27,5 +27,5 @@ Functions include:
 Example data sets are contained in the files Hwangdata.mat and humanSSVEPdata.mat.
 
 Package available from: https://github.com/bakerdh/FourierStats
-For further details see: ArXiV
+For further details see: http://arxiv.org/abs/2101.04408
 DHB 12/01/21

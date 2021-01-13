@@ -11,7 +11,7 @@
 #' participant: variable storing participant/subject IDs (i.e. the random factor) for repeated measures analysis
 #'        this is an optional input, but if it is supplied it supercedes values from the matrix
 #'
-#' see Baker (2021) for further details
+#' see Baker (2021, http://arxiv.org/abs/2101.04408) for further details
 #' @export
 anovacirc.test <- function(data, group=NULL, participant=NULL){
 

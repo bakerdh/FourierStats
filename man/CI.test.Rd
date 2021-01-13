@@ -9,7 +9,7 @@ alpha is the criterion for statistical significance, set to a default of 0.05
 the condition index is square root of the the ratio of eigenvalues (eigenvector lengths), calculated longest/shortest
 the index is then compared for significance with an expected distribution function
 significant tests (p < alpha) violate the assumptions of the T-squared-circ and ANOVA-squared-circ tests
-see Baker (2021) for further details}
+see Baker (2021, http://arxiv.org/abs/2101.04408) for further details}
 \usage{
 CI.test(data, alpha = 0.05)
 }
@@ -21,5 +21,5 @@ alpha is the criterion for statistical significance, set to a default of 0.05
 the condition index is square root of the the ratio of eigenvalues (eigenvector lengths), calculated longest/shortest
 the index is then compared for significance with an expected distribution function
 significant tests (p < alpha) violate the assumptions of the T-squared-circ and ANOVA-squared-circ tests
-see Baker (2021) for further details
+see Baker (2021, http://arxiv.org/abs/2101.04408) for further details
 }

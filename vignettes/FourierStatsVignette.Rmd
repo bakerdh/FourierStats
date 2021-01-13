@@ -18,7 +18,7 @@ knitr::opts_chunk$set(
 library(FourierStats)
 ```
 
-This vignette demonstrates the main functions from the _FourierStats_ package. Details of the rationale are included in the original paper by Baker (2021: ArXiV). The functions are intended for analysis of data from periodic stimulation experiments in neuroscience (both in human and animal systems). For examples, we will use the human SSVEP data set described in Figure 10 of the paper, originally published by Vilidaite et al. (2018; [doi:10.1098/rspb.2018.2255](http://doi.org/10.1098/rspb.2018.2255)), with the raw data available at: [http://dx.doi.org/10.17605/OSF.IO/Y4N5K](http://dx.doi.org/10.17605/OSF.IO/Y4N5K)
+This vignette demonstrates the main functions from the _FourierStats_ package. Details of the rationale are included in the original paper by Baker (2021: [http://arxiv.org/abs/2101.04408](http://arxiv.org/abs/2101.04408)). The functions are intended for analysis of data from periodic stimulation experiments in neuroscience (both in human and animal systems). For examples, we will use the human SSVEP data set described in Figure 10 of the paper, originally published by Vilidaite et al. (2018; [doi:10.1098/rspb.2018.2255](http://doi.org/10.1098/rspb.2018.2255)), with the raw data available at: [http://dx.doi.org/10.17605/OSF.IO/Y4N5K](http://dx.doi.org/10.17605/OSF.IO/Y4N5K)
 
 We can load in a processed data set included with the _FourierStats_ package as follows:
 

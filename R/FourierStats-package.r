@@ -13,5 +13,5 @@
 #'  - fftshift: helper function that performs the quadrant shift of a 2D Fourier spectrum
 #'
 #'  package available from: https://github.com/bakerdh/FourierStats
-#'  for further details see: ArXiV
+#'  for further details see: http://arxiv.org/abs/2101.04408
 #'  DHB 12/01/21

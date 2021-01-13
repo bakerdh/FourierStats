@@ -5,7 +5,7 @@
 #' the condition index is square root of the the ratio of eigenvalues (eigenvector lengths), calculated longest/shortest
 #' the index is then compared for significance with an expected distribution function
 #' significant tests (p < alpha) violate the assumptions of the T-squared-circ and ANOVA-squared-circ tests
-#' see Baker (2021) for further details
+#' see Baker (2021, http://arxiv.org/abs/2101.04408) for further details
 #' @export
 CI.test <- function(data, alpha=0.05){
 

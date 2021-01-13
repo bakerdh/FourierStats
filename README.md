@@ -16,5 +16,5 @@ All scripts are stored in the 'R' subdirectory, and there is a vignette demonstr
 The Matlab toolbox is stored in the FourierStatsMatlab directory. This should be downloaded and added to the Matlab path either using the Set Path GUI, or the addpath function.
 
 The packages are available from: https://github.com/bakerdh/FourierStats
-The manuscript is available as a preprint at: 
+The manuscript is available as a preprint at: http://arxiv.org/abs/2101.04408
 
