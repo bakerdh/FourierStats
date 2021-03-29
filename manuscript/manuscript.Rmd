@@ -34,7 +34,7 @@ if (length(missingpackages)>0){devtools::install_github("bakerdh/FourierStats")}
 toinstall <- packagelist[which(!packagelist %in% (.packages()))]
 invisible(lapply(toinstall,library,character.only=TRUE))
 
-nsims <- 1000  # global value for the whole script - increase to 100000 for final run, but note this takes around 16 hours to complete (depending on processor speed)
+nsims <- 100000  # global value for the whole script - increase to 100000 for final run, but note this takes around 16 hours to complete (depending on processor speed)
 
 # palette using the main colours from the NBDT journal logo
 nbdtpal <- c(rgb(0,0,0),rgb(0.73,0.16,0.42),rgb(0.22,0.44,0.64),'darkgreen','darkorange')
