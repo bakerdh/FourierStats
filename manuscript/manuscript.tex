@@ -69,7 +69,7 @@
 
 \title{Statistical analysis of periodic data in neuroscience}
 \author{Daniel H. Baker}
-\date{2021-06-26}
+\date{2021-07-06}
 
 \begin{document}
 \maketitle
@@ -244,7 +244,7 @@ where \(MS_M\) is the mean squares of the linear model, and \(MS_R\) is the mean
 MS_M = \frac{\Sigma N_k (\bar{x}_k - \bar{x}_{grand})^2}{df_M},
 \end{equation}
 
-where \(N_k\) is the number of observations in group \emph{k}, \(\bar{x}_k\) is the bivariate sample mean of group \emph{k}, \(\bar{x}_{grand}\) is the bivariate mean of the entire sample (including all groups), \(\Sigma\) denotes summation across groups, and \(df_M\) is the degrees of freedom for the model. The model degrees of freedom for \emph{k} groups is \(df_M = 2(k-1)\), with the factor of two scaling relative to standard univariate ANOVA reflecting the additional degrees of freedom afforded by having two dependent variables.
+where \(N_k\) is the number of observations in group \emph{k}, \(\bar{x}_k\) is the bivariate sample mean of group \emph{k}, \(\bar{x}_{grand}\) is the bivariate mean of the entire sample (including all groups), \(\Sigma\) denotes summation across groups, and \(df_M\) is the degrees of freedom for the model. Note that by using the vector distances between points, this equation reduces multivariate data to a single scalar value, in a similar way to equations \eqref{eq:t2eq} and \eqref{eq:t2c}. The model degrees of freedom for \emph{k} groups is \(df_M = 2(k-1)\), with the factor of two scaling relative to standard univariate ANOVA reflecting the additional degrees of freedom afforded by having two dependent variables.
 
 The residuals are the vector distances between each data point and its corresponding group mean. The denominator component for the F-ratio equation is therefore defined as:
 
@@ -253,7 +253,7 @@ The residuals are the vector distances between each data point and its correspon
 MS_R = \frac{\Sigma (x_{i,k} - \bar{x}_k)^2}{df_R},
 \end{equation}
 
-where \(x_{i,k}\) is the \(i\)th data point from group \emph{k}, and other terms are as described previously. The degrees of freedom for a balanced design are calculated as \(df_R = 2((Nk)-k)\), where \emph{N} is the number of observations per group, and \emph{k} is the number of groups. A \emph{p}-value can then be determined by comparing the F-ratio calculated from equation \eqref{eq:Fratio} to an F-distribution with \(df_M\) and \(df_R\) degrees of freedom. Appendix 1 summarises the results of stochastic simulations that confirm the F-distribution in the absence of an effect.
+where \(x_{i,k}\) is the \(i\)th data point from group \emph{k}, and other terms are as described previously. The degrees of freedom for a balanced design are calculated as \(df_R = 2((Nk)-k)\), where \emph{N} is the number of observations per group, and \emph{k} is the number of groups. A \emph{p}-value can then be determined by comparing the F-ratio calculated from equation \eqref{eq:Fratio} to an F-distribution with \(df_M\) and \(df_R\) degrees of freedom.
 
 A suitable name for such a test might be \({ANOVA}^2_{circ}\), as this reflects the similarity to ANOVA, and the extension of the logic of \(T^2_{circ}\) (an alternative name might be \(MANOVA_{circ}\), however this feels less appropriate given that many of the key features of MANOVA are absent). Figure \ref{fig:powerfig2} shows simulations analogous to those in Figure \ref{fig:powerfig} for a one-way between-subjects design with three levels. MANOVA is directly compared to the \({ANOVA}^2_{circ}\) statistic across a range of effect sizes and sample sizes. Just as for the one-sample statistics, the advantages of \({ANOVA}^2_{circ}\) are particularly apparent for small sample sizes, and larger effect sizes (Figure \ref{fig:powerfig2}f).
 
@@ -334,20 +334,6 @@ Even when statistics are conducted using both the real and imaginary Fourier com
 \section{General recommendations for analysing periodic data}\label{general-recommendations-for-analysing-periodic-data}}
 
 The simulations reported here allow several recommendations to be made for how periodic data should be analysed. Multivariate statistics should be used for phase-locked Fourier data instead of univariate statistics such as T-tests and ANOVA. This avoids problems from non-normal distributions of amplitudes violating the test assumptions, and also provides a sensitivity benefit from the inclusion of phase information. Outliers can be removed when they have a Mahalanobis distance exceeding 3, and the pairwise Mahalanobis distance should be reported as a measure of effect size. For sample sizes of N \textless{} 32, the \(T^2_{circ}\) and \(ANOVA^2_{circ}\) statistics can be used if the condition index test is non-significant for all conditions. Alternatively, the \(T^2\) or MANOVA statistics should be used when these conditions are not met. The greater power afforded by these tests should in general lead to more accurate statistical inferences when analysing periodic data. Additionally, more sensitive methods require fewer observations to reach a given level of power, which has important ethical implications for animal research if fewer experimental subjects are needed.
-
-\hypertarget{appendix-1---proof-by-stochastic-simulation-of-asymptotic-f-distributions}{%
-\section{Appendix 1 - proof by stochastic simulation of asymptotic F-distributions}\label{appendix-1---proof-by-stochastic-simulation-of-asymptotic-f-distributions}}
-
-To confirm that distributions of F-statistics generated by the \(ANOVA^2_{circ}\) test have the expected form, simulations were conducted for a range of study designs. A null bivariate data set was generated for \emph{N} participants and \emph{k} groups, using normally distributed random numbers with underlying condition means of 0 for both the real and imaginary components. The F-statistic was then calculated using equations \eqref{eq:Fratio}, \eqref{eq:MSM} and \eqref{eq:MSR}. This procedure was repeated one million times for twenty combinations of \emph{N} and \emph{k}, and the distributions summarised using histograms. Figure \ref{fig:fdistributions} shows the results of these simulations (blue shading), for comparison with analytically derived F-distributions of \(df_M = 2(k-1)\) and \(df_R = 2((Nk)-k)\) degrees of freedom (black lines, generated using the \emph{df} function in \emph{R}). The correspondence between the stochastic and analytic distributions is excellent, confirming that the test produces the expected null distribution of test statistics.
-
-\begin{figure}
-
-{\centering \includegraphics{figures/Fdistributions} 
-
-}
-
-\caption{Null distributions of F-statistics generated by simulation (blue shading) and analytically (black lines) for different numbers of groups (k; rows) and sample sizes (N; columns).}\label{fig:fdistributions}
-\end{figure}
 
 \hypertarget{references}{%
 \section*{References}\label{references}}
